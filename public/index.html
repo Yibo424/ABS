@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABS Journal Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --econ-bg: #1e40af; --econ-light: #dbeafe; --econ-text: #1e3a8a;
+    --fin-bg:  #065f46; --fin-light:  #d1fae5; --fin-text:  #064e3b;
+    --hf-bg: #f59e0b;   --hf-light: #fef3c7;  --hf-text: #92400e; --hf-border: #f59e0b;
+    --new-light: #ede9fe; --new-text: #5b21b6;
+    --wp-light: #f1f5f9; --wp-color: #475569;
+    --read-opacity: 0.45;
+    --radius: 8px; --radius-sm: 5px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07);
+  }
+
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.5; }
+
+  /* ── Header ── */
+  .site-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow);
+  }
+  .header-left h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; }
+  .header-left p  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  .header-right   { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .last-updated   { font-size: 0.75rem; color: var(--text-muted); }
+
+  .btn-icon {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 5px 11px; font-size: 0.8rem; font-family: var(--font); cursor: pointer; color: var(--text);
+    display: flex; align-items: center; gap: 5px; transition: background .15s, border-color .15s;
+  }
+  .btn-icon:hover { background: var(--bg); border-color: #94a3b8; }
+  .btn-icon:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-icon.spinning .spin { display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Tabs ── */
+  .tabs-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 24px; display: flex; gap: 0; overflow-x: auto;
+  }
+  .tab-btn {
+    background: none; border: none; border-bottom: 3px solid transparent;
+    padding: 11px 18px; font-size: .875rem; font-family: var(--font); font-weight: 500;
+    color: var(--text-muted); cursor: pointer; transition: color .15s, border-color .15s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: #1e40af; border-bottom-color: #1e40af; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 8px 24px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  #filterRow1 { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  #filterRow1::-webkit-scrollbar { display: none; }
+
+  .filter-btn {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+    padding: 3px 11px; font-size: .76rem; font-family: var(--font); cursor: pointer;
+    color: var(--text-muted); font-weight: 500; transition: all .15s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .filter-btn:hover { color: var(--text); border-color: #94a3b8; }
+  .filter-btn.active { background: #1e40af; border-color: #1e40af; color: #fff; }
+  .filter-btn .err-badge { background: #ef4444; color: #fff; border-radius: 3px; font-size: .63rem; padding: 0 3px; }
+
+  .filter-sep { width: 1px; background: var(--border); height: 20px; margin: 0 2px; }
+
+  .btn-hf-toggle {
+    background: var(--hf-light); border: 1px solid #fcd34d; border-radius: 20px;
+    padding: 3px 11px; font-size: .76rem; font-family: var(--font); cursor: pointer;
+    color: var(--hf-text); font-weight: 600; transition: all .15s;
+  }
+  .btn-hf-toggle:hover { background: #fde68a; }
+  .btn-hf-toggle.active { background: #f59e0b; border-color: #d97706; color: #fff; }
+
+  /* Tools row */
+  .search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 280px; }
+  .search-wrap .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: .8rem; color: var(--text-muted); pointer-events: none; }
+  .search-input {
+    width: 100%; padding: 4px 8px 4px 26px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: .8rem; font-family: var(--font); background: var(--bg); color: var(--text);
+    outline: none; transition: border-color .15s;
+  }
+  .search-input:focus { border-color: #93c5fd; background: #fff; }
+
+  .tool-group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .tool-label  { font-size: .72rem; color: var(--text-muted); margin-right: 2px; }
+
+  .tool-btn {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 3px 9px; font-size: .75rem; font-family: var(--font); cursor: pointer;
+    color: var(--text-muted); transition: all .15s;
+  }
+  .tool-btn:hover { color: var(--text); border-color: #94a3b8; }
+  .tool-btn.active { background: #1e40af; border-color: #1e40af; color: #fff; }
+
+  .btn-bookmark-filter.active { background: #f59e0b; border-color: #d97706; color: #fff; }
+
+  /* ── Main ── */
+  .main { padding: 20px 24px; max-width: 980px; margin: 0 auto; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Spinner ── */
+  .spinner-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 56px 0; color: var(--text-muted); font-size: .875rem; }
+  .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: #1e40af; border-radius: 50%; animation: spin .8s linear infinite; }
+
+  /* ── Stats bar ── */
+  .stats-bar { font-size: .78rem; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .stats-bar b { color: var(--text); font-weight: 600; }
+
+  /* ── Papers panel (collapsible) ── */
+  .papers-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .papers-toggle {
+    width: 100%; background: none; border: none; padding: 11px 16px;
+    display: flex; align-items: center; gap: 8px; font-size: .875rem; font-weight: 600;
+    font-family: var(--font); cursor: pointer; color: var(--text); text-align: left;
+  }
+  .papers-toggle:hover { background: var(--bg); }
+  .papers-toggle .chevron { margin-left: auto; font-size: .7rem; color: var(--text-muted); transition: transform .2s; }
+  .papers-toggle.open .chevron { transform: rotate(180deg); }
+  .papers-body { border-top: 1px solid var(--border); padding: 12px 14px 14px; }
+
+  /* ── Paper card ── */
+  .papers-list { display: flex; flex-direction: column; gap: 9px; }
+
+  .paper-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; box-shadow: var(--shadow); transition: box-shadow .15s;
+  }
+  .paper-card:hover { box-shadow: var(--shadow-md); }
+  .paper-card.hf { border-left: 3px solid var(--hf-border); }
+  .paper-card.is-read { opacity: var(--read-opacity); }
+  .paper-card.is-read:hover { opacity: 1; }
+
+  .card-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .card-left  { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .card-right { display: flex; align-items: center; gap: 6px; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px;
+    font-size: .7rem; font-weight: 600; white-space: nowrap;
+  }
+  .badge-econ { background: var(--econ-light); color: var(--econ-text); }
+  .badge-fin  { background: var(--fin-light);  color: var(--fin-text); }
+  .badge-wp   { background: var(--wp-light);   color: var(--wp-color); }
+  .badge-abs  { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
+  .badge-hf   { background: var(--hf-light); color: var(--hf-text); border: 1px solid #fcd34d; }
+  .badge-new  { background: var(--new-light); color: var(--new-text); }
+
+  .card-date { font-size: .72rem; color: var(--text-muted); white-space: nowrap; }
+
+  .card-action {
+    background: none; border: none; cursor: pointer; padding: 2px 3px; font-size: .9rem;
+    line-height: 1; border-radius: 4px; transition: opacity .15s, background .15s; opacity: .35;
+  }
+  .card-action:hover { opacity: 1; background: var(--bg); }
+  .card-action.on    { opacity: 1; }
+
+  .card-title { font-size: .9rem; font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+  .card-title a { color: var(--text); text-decoration: none; }
+  .card-title a:hover { color: #1e40af; text-decoration: underline; }
+
+  .card-authors { font-size: .76rem; color: var(--text-muted); margin-bottom: 5px; }
+
+  .abstract-toggle {
+    background: none; border: none; cursor: pointer; font-size: .73rem;
+    color: var(--text-muted); font-family: var(--font); padding: 0;
+    display: flex; align-items: center; gap: 3px; transition: color .15s;
+  }
+  .abstract-toggle:hover { color: var(--text); }
+  .abstract-toggle .abs-chevron { font-size: .6rem; transition: transform .2s; }
+  .abstract-toggle.open .abs-chevron { transform: rotate(180deg); }
+
+  .card-abstract {
+    display: block; margin-top: 6px; padding: 8px 12px;
+    background: var(--bg); border-radius: var(--radius-sm);
+    font-size: .78rem; color: var(--text-muted); line-height: 1.6;
+    border-left: 2px solid var(--border);
+    /* Clamp to 3 lines by default */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  .card-abstract.open {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+
+  /* ── Keyword highlight ── */
+  .card-kw-highlight { outline: 2px solid #f59e0b; outline-offset: 1px; }
+  .kw-mark { background: #fef08a; color: #78350f; border-radius: 2px; padding: 0 1px; }
+
+  /* ── Watched author ── */
+  .badge-watched { background: #dbeafe; color: #1e40af; }
+  .card-watched { border-left: 3px solid #3b82f6; }
+
+  /* ── Paper notes ── */
+  .card-note { display: none; margin-top: 6px; }
+  .card-note.open { display: block; }
+  .note-input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 6px 8px; font-size: .76rem; font-family: var(--font);
+    color: var(--text); background: var(--surface);
+    resize: vertical; min-height: 54px; line-height: 1.5;
+  }
+  .note-input:focus { outline: none; border-color: #94a3b8; }
+  .card-action.note-on { color: #2563eb; }
+
+  /* ── Empty / error ── */
+  .empty-state { text-align: center; padding: 44px 0; color: var(--text-muted); }
+  .empty-state .icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .empty-state p { font-size: .875rem; }
+
+  .error-banner {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm);
+    padding: 9px 13px; font-size: .8rem; color: #991b1b; margin-bottom: 12px; display: none;
+  }
+  .error-banner.visible { display: block; }
+
+  /* ── Info panel ── */
+  .info-panel { margin-top: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .info-toggle {
+    width: 100%; background: none; border: none; padding: 11px 16px;
+    display: flex; align-items: center; gap: 8px; font-size: .875rem; font-weight: 600;
+    font-family: var(--font); cursor: pointer; color: var(--text); text-align: left;
+  }
+  .info-toggle:hover { background: var(--bg); }
+  .info-toggle .chevron { margin-left: auto; font-size: .7rem; color: var(--text-muted); transition: transform .2s; }
+  .info-toggle.open .chevron { transform: rotate(180deg); }
+  .info-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .info-body.open { display: block; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 9px; padding-top: 11px; }
+  .info-item { background: var(--bg); border-radius: var(--radius-sm); padding: 9px 11px; }
+  .info-item .name { font-weight: 600; font-size: .78rem; color: var(--text); margin-bottom: 2px; }
+  .info-item .desc { font-size: .72rem; color: var(--text-muted); line-height: 1.4; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .site-header, .filter-bar, .main { padding-left: 14px; padding-right: 14px; }
+    .tabs-bar { padding: 0 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="site-header">
+  <div class="header-left">
+    <h1>📚 ABS Journal Tracker</h1>
+    <p>Economics &amp; Finance · ABS 4★ &amp; 4</p>
+  </div>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated">—</span>
+    <button class="btn-icon" id="btnRefresh" onclick="handleRefresh()">
+      <span class="spin">🔄</span> Refresh
+    </button>
+  </div>
+</header>
+
+<!-- ── Tabs ── -->
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="published"  onclick="switchTab('published', this)"  id="tab-published">Published Papers</button>
+  <button class="tab-btn" data-tab="nber"       onclick="switchTab('nber', this)"       id="tab-nber">NBER Working Papers</button>
+  <button class="tab-btn" data-tab="arxiv"      onclick="switchTab('arxiv', this)"      id="tab-arxiv">arXiv Preprints</button>
+  <button class="tab-btn" data-tab="thisweek"   onclick="switchTab('thisweek', this)"   id="tab-thisweek">🗓 This Week</button>
+</div>
+
+<!-- ── Filter bar ── -->
+<div class="filter-bar" id="filterBar">
+
+  <!-- Row 1: context-sensitive pills (journal / arXiv category) -->
+  <div class="filter-row" id="filterRow1">
+    <!-- Published journals -->
+    <div id="journalPills" style="display:flex;flex-wrap:nowrap;gap:6px;align-items:center;flex-shrink:0;">
+      <button class="filter-btn active" data-journal="all"          onclick="setJournalFilter('all',this)">All</button>
+      <button class="filter-btn" data-journal="AER"                 onclick="setJournalFilter('AER',this)">AER</button>
+      <button class="filter-btn" data-journal="Econometrica"        onclick="setJournalFilter('Econometrica',this)">Econometrica</button>
+      <button class="filter-btn" data-journal="QJE"                 onclick="setJournalFilter('QJE',this)">QJE</button>
+      <button class="filter-btn" data-journal="REStud"              onclick="setJournalFilter('REStud',this)">REStud</button>
+      <button class="filter-btn" data-journal="JPE"                 onclick="setJournalFilter('JPE',this)">JPE</button>
+      <button class="filter-btn" data-journal="JF"                  onclick="setJournalFilter('JF',this)">JF</button>
+      <button class="filter-btn" data-journal="JFE"                 onclick="setJournalFilter('JFE',this)">JFE</button>
+      <button class="filter-btn" data-journal="RFS"                 onclick="setJournalFilter('RFS',this)">RFS</button>
+      <button class="filter-btn" data-journal="Econ Journal"        onclick="setJournalFilter('Econ Journal',this)">Econ Journal</button>
+      <button class="filter-btn" data-journal="AEJ:Applied"         onclick="setJournalFilter('AEJ:Applied',this)">AEJ:Applied</button>
+      <button class="filter-btn" data-journal="JPubEc"              onclick="setJournalFilter('JPubEc',this)">JPubEc</button>
+      <button class="filter-btn" data-journal="JFQA"                onclick="setJournalFilter('JFQA',this)">JFQA</button>
+      <button class="filter-btn" data-journal="ReStat"              onclick="setJournalFilter('ReStat',this)">ReStat</button>
+      <div class="filter-sep"></div>
+      <button class="btn-hf-toggle" id="btnHFToggle" onclick="toggleHF()">🏠 HF Only</button>
+    </div>
+    <!-- arXiv categories (shown when arXiv tab active) -->
+    <div id="arxivPills" style="display:none;flex-wrap:nowrap;gap:6px;align-items:center;flex-shrink:0;">
+      <button class="filter-btn active" data-cat="all" onclick="setArxivFilter('all',this)">All</button>
+      <div class="filter-sep"></div>
+      <button class="btn-hf-toggle" id="btnHFToggle2" onclick="toggleHF()">🏠 HF Only</button>
+    </div>
+  </div>
+
+  <!-- Row 2: search + date + sort + bookmarks + export -->
+  <div class="filter-row" id="filterRow2">
+    <!-- Search -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="searchInput" type="search" placeholder="Title or author…"
+             oninput="onSearch(this.value)">
+    </div>
+
+    <!-- Date -->
+    <div class="tool-group">
+      <span class="tool-label">📅</span>
+      <button class="tool-btn active" data-date="all" onclick="setDateFilter('all',this)">All</button>
+      <button class="tool-btn" data-date="7d"          onclick="setDateFilter('7d',this)">7d</button>
+      <button class="tool-btn" data-date="30d"         onclick="setDateFilter('30d',this)">30d</button>
+    </div>
+
+    <!-- Sort -->
+    <div class="tool-group">
+      <span class="tool-label">↕</span>
+      <button class="tool-btn active" data-sort="date"    onclick="setSortBy('date',this)">Date</button>
+      <button class="tool-btn"        data-sort="journal" onclick="setSortBy('journal',this)">Journal</button>
+    </div>
+
+    <!-- Bookmarks -->
+    <button class="tool-btn btn-bookmark-filter" id="btnBookmarkFilter" onclick="toggleBookmarkFilter()">🔖 Saved</button>
+
+    <!-- Watched authors filter -->
+    <button class="tool-btn" id="btnWatchedFilter" onclick="toggleWatchedFilter()">👤 Watched</button>
+
+    <!-- Export -->
+    <div class="tool-group">
+      <button class="tool-btn" onclick="exportCSV()">⬇ CSV</button>
+      <button class="tool-btn" onclick="exportBibTeX()">⬇ BibTeX</button>
+    </div>
+
+    <!-- Keyword highlight -->
+    <div class="search-wrap" style="min-width:160px;flex:0 1 auto;">
+      <span class="search-icon">✨</span>
+      <input class="search-input" id="kwInput" type="text" placeholder="Highlight keywords…"
+             oninput="onKwInput(this.value)">
+    </div>
+
+    <!-- Watch authors input -->
+    <div class="search-wrap" style="min-width:180px;flex:0 1 auto;">
+      <span class="search-icon">👤</span>
+      <input class="search-input" id="watchedAuthorsInput" type="text" placeholder="Watch authors (comma-sep)…"
+             oninput="onWatchedAuthorsInput(this.value)">
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Main ── -->
+<main class="main">
+
+  <div class="panel active" id="panel-published">
+    <div class="error-banner" id="errorBanner-published"></div>
+    <div id="content-published"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></div>
+  </div>
+
+  <div class="panel" id="panel-nber">
+    <div class="error-banner" id="errorBanner-nber"></div>
+    <div id="content-nber"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></div>
+  </div>
+
+  <div class="panel" id="panel-arxiv">
+    <div class="error-banner" id="errorBanner-arxiv"></div>
+    <div id="content-arxiv"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></div>
+  </div>
+
+  <div class="panel" id="panel-thisweek">
+    <div id="content-thisweek"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="info-panel">
+    <button class="info-toggle" id="infoToggle" onclick="toggleInfo()">
+      ℹ️ Update Schedule
+      <span class="chevron">▼</span>
+    </button>
+    <div class="info-body" id="infoBody">
+      <div class="info-grid">
+        <div class="info-item"><div class="name">AER</div><div class="desc">Monthly issues — American Economic Association</div></div>
+        <div class="info-item"><div class="name">Econometrica</div><div class="desc">Bimonthly; Early View available ahead of issue</div></div>
+        <div class="info-item"><div class="name">QJE</div><div class="desc">Quarterly; Advance Articles ~1 week after acceptance</div></div>
+        <div class="info-item"><div class="name">REStud</div><div class="desc">Quarterly; Advance Articles ~1 week after acceptance</div></div>
+        <div class="info-item"><div class="name">JPE</div><div class="desc">Monthly; Online First available ahead of print</div></div>
+        <div class="info-item"><div class="name">Economic Journal</div><div class="desc">ABS 4; Advance Articles via Oxford Academic</div></div>
+        <div class="info-item"><div class="name">JF</div><div class="desc">Bimonthly; Early View via Wiley</div></div>
+        <div class="info-item"><div class="name">JFE</div><div class="desc">Monthly; Articles in Press via Elsevier</div></div>
+        <div class="info-item"><div class="name">RFS</div><div class="desc">Monthly; Advance Articles via Oxford Academic</div></div>
+        <div class="info-item"><div class="name">AEJ: Applied Economics</div><div class="desc">ABS 4; Quarterly — American Economic Association</div></div>
+        <div class="info-item"><div class="name">Journal of Public Economics</div><div class="desc">ABS 4; Monthly; Articles in Press via Elsevier</div></div>
+        <div class="info-item"><div class="name">JFQA</div><div class="desc">ABS 4; Bimonthly — Cambridge University Press</div></div>
+        <div class="info-item"><div class="name">ReStat</div><div class="desc">ABS 4; Quarterly — MIT Press</div></div>
+        <div class="info-item"><div class="name">NBER</div><div class="desc">New working papers every Monday</div></div>
+        <div class="info-item"><div class="name">arXiv Economics</div><div class="desc">Daily updates across econ sub-categories</div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── LocalStorage keys ─────────────────────────────────────────────────────────
+const LS = {
+  read:      'ejt_read',
+  bookmarks: 'ejt_bookmarks',
+  lastVisit: 'ejt_last_visit',
+  prefs:     'ejt_prefs',
+  notes:     'ejt_notes',
+};
+
+function lsGet(key, fallback) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const prefs = lsGet(LS.prefs, {});
+
+const state = {
+  publishedPapers: [],
+  nberPapers: [],
+  arxivPapers: [],
+  publishedErrors: {},
+  workingErrors: {},
+  lastUpdatedPublished: null,
+
+  currentTab:     prefs.currentTab     || 'published',
+  journalFilter:  prefs.journalFilter  || 'all',
+  hfOnly:         prefs.hfOnly         || false,
+  showBookmarks:  prefs.showBookmarks  || false,
+  searchText:     '',
+  dateFilter:     prefs.dateFilter     || 'all',
+  sortBy:         prefs.sortBy         || 'date',
+  arxivCategory:   prefs.arxivCategory   || 'all',
+  keywords:        prefs.keywords        || '',
+  watchedAuthors:  prefs.watchedAuthors  || '',
+  showWatchedOnly: prefs.showWatchedOnly || false,
+
+  notes:    lsGet(LS.notes, {}),
+  readUrls:     new Set(lsGet(LS.read,      [])),
+  bookmarkUrls: new Set(lsGet(LS.bookmarks, [])),
+  lastVisit:    lsGet(LS.lastVisit, null),
+};
+
+// Update last visit timestamp
+lsSet(LS.lastVisit, new Date().toISOString());
+
+function savePrefs() {
+  lsSet(LS.prefs, {
+    currentTab:    state.currentTab,
+    journalFilter: state.journalFilter,
+    hfOnly:        state.hfOnly,
+    showBookmarks: state.showBookmarks,
+    dateFilter:    state.dateFilter,
+    sortBy:        state.sortBy,
+    arxivCategory:   state.arxivCategory,
+    keywords:        state.keywords,
+    watchedAuthors:  state.watchedAuthors,
+    showWatchedOnly: state.showWatchedOnly,
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); }
+  catch { return iso; }
+}
+
+function isNew(paper) {
+  if (!state.lastVisit || !paper.date) return false;
+  return paper.date > state.lastVisit.slice(0, 10);
+}
+
+function badgeClass(category) {
+  if (category === 'economics') return 'badge-econ';
+  if (category === 'finance')   return 'badge-fin';
+  return 'badge-wp';
+}
+
+// ── Filter logic ──────────────────────────────────────────────────────────────
+function applyFilters(papers) {
+  let list = papers;
+
+  if (state.currentTab === 'published' && state.journalFilter !== 'all')
+    list = list.filter(p => p.journal === state.journalFilter);
+
+  if (state.currentTab === 'arxiv' && state.arxivCategory !== 'all')
+    list = list.filter(p => p.subCategory === state.arxivCategory);
+
+  if (state.hfOnly)        list = list.filter(p => p.householdFinance);
+  if (state.showBookmarks) list = list.filter(p => state.bookmarkUrls.has(p.url));
+  if (state.showWatchedOnly) list = list.filter(p => isWatchedAuthor(p));
+
+  if (state.searchText) {
+    const q = state.searchText.toLowerCase();
+    list = list.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      (p.authors || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (state.dateFilter !== 'all') {
+    const days   = state.dateFilter === '7d' ? 7 : 30;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days); cutoff.setHours(0,0,0,0);
+    list = list.filter(p => p.date && new Date(p.date) >= cutoff);
+  }
+
+  list = [...list].sort((a, b) => {
+    if (state.sortBy === 'journal') return (a.journal||'').localeCompare(b.journal||'');
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1; if (!b.date) return -1;
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  return list;
+}
+
+// ── Paper card ────────────────────────────────────────────────────────────────
+function renderCard(p) {
+  const isRead     = state.readUrls.has(p.url);
+  const isBookmark = state.bookmarkUrls.has(p.url);
+  const fresh      = isNew(p);
+  const urlEnc     = escHtml(p.url);
+  const bid        = badgeClass(p.category);
+
+  const absBadge      = p.abs    ? `<span class="badge badge-abs">ABS ${escHtml(p.abs)}</span>` : '';
+  const hfBadge       = p.householdFinance ? `<span class="badge badge-hf">🏠 HF</span>` : '';
+  const newBadge      = fresh    ? `<span class="badge badge-new">🆕 New</span>` : '';
+  const watchedBadge  = isWatchedAuthor(p) ? `<span class="badge badge-watched">👤</span>` : '';
+  const hasNote       = !!state.notes[p.url];
+  const noteVal       = state.notes[p.url] || '';
+
+  const abstractBtn = p.abstract
+    ? `<div class="card-abstract">${escHtml(p.abstract)}</div>
+       <button class="abstract-toggle" onclick="toggleAbstract(this)">Show more <span class="abs-chevron">▼</span></button>`
+    : '';
+
+  const subCatLabel = p.subCategory
+    ? `<span style="font-size:.7rem;color:var(--text-muted);margin-left:2px">${escHtml(arxivCatLabel(p.subCategory))}</span>` : '';
+
+  return `
+  <div class="paper-card${p.householdFinance ? ' hf' : ''}${isRead ? ' is-read' : ''}${isWatchedAuthor(p) ? ' card-watched' : ''}" data-url="${urlEnc}">
+    <div class="card-meta">
+      <div class="card-left">
+        <span class="badge ${bid}">${escHtml(p.journal)}</span>
+        ${absBadge}${hfBadge}${newBadge}${watchedBadge}${subCatLabel}
+      </div>
+      <div class="card-right">
+        <button class="card-action${isBookmark ? ' on' : ''}" title="${isBookmark ? 'Remove bookmark' : 'Bookmark'}"
+                onclick="toggleBookmark(this,'${urlEnc}')">🔖</button>
+        <button class="card-action${isRead ? ' on' : ''}" title="${isRead ? 'Mark unread' : 'Mark read'}"
+                onclick="toggleRead(this,'${urlEnc}')">✓</button>
+        <button class="card-action${hasNote ? ' note-on' : ''}" title="Notes"
+                onclick="toggleNote(this,'${urlEnc}')">📝</button>
+        <span class="card-date">${escHtml(fmtDate(p.date))}</span>
+      </div>
+    </div>
+    <div class="card-title"><a href="${urlEnc}" target="_blank" rel="noopener">${escHtml(p.title)}</a></div>
+    ${p.authors ? `<div class="card-authors">${escHtml(p.authors)}</div>` : ''}
+    ${abstractBtn}
+    <div class="card-note${hasNote ? ' open' : ''}">
+      <textarea class="note-input" placeholder="Add notes…"
+                oninput="onNoteInput(this,'${urlEnc}')">${escHtml(noteVal)}</textarea>
+    </div>
+  </div>`;
+}
+
+// ── Stats bar ─────────────────────────────────────────────────────────────────
+function statsBar(papers, allPapers) {
+  const hfN    = papers.filter(p => p.householdFinance).length;
+  const newN   = papers.filter(p => isNew(p)).length;
+  const bmN    = papers.filter(p => state.bookmarkUrls.has(p.url)).length;
+  const readN  = papers.filter(p => state.readUrls.has(p.url)).length;
+  const parts  = [`<b>${papers.length}</b> paper${papers.length !== 1 ? 's' : ''}`];
+  if (hfN)   parts.push(`🏠 <b>${hfN}</b> HF`);
+  if (newN)  parts.push(`🆕 <b>${newN}</b> new`);
+  if (bmN)   parts.push(`🔖 <b>${bmN}</b> saved`);
+  if (readN) parts.push(`✓ <b>${readN}</b> read`);
+  return `<div class="stats-bar">${parts.join('<span style="color:var(--border)">·</span>')}</div>`;
+}
+
+// ── Render list ───────────────────────────────────────────────────────────────
+function renderList(papers, containerId, label, allPapers) {
+  const container = document.getElementById(containerId);
+  if (!papers || papers.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No papers match the current filters.</p></div>`;
+    return;
+  }
+  const bodyId   = `body-${containerId}`;
+  const toggleId = `toggle-${containerId}`;
+  container.innerHTML = statsBar(papers, allPapers) + `
+    <div class="papers-panel">
+      <button class="papers-toggle open" id="${toggleId}" onclick="togglePapersList('${bodyId}','${toggleId}')">
+        📄 ${label}
+        <span class="chevron">▼</span>
+      </button>
+      <div class="papers-body" id="${bodyId}">
+        <div class="papers-list">${papers.map(renderCard).join('')}</div>
+      </div>
+    </div>`;
+}
+
+function togglePapersList(bodyId, toggleId) {
+  const body = document.getElementById(bodyId), toggle = document.getElementById(toggleId);
+  const open = toggle.classList.contains('open');
+  body.style.display = open ? 'none' : '';
+  toggle.classList.toggle('open', !open);
+}
+
+// ── Re-render current active tab ──────────────────────────────────────────────
+function getThisWeekPapers() {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7); cutoff.setHours(0,0,0,0);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  return [...state.publishedPapers, ...state.nberPapers, ...state.arxivPapers]
+    .filter(p => p.date && p.date >= cutoffStr)
+    .sort((a, b) => (b.date||'').localeCompare(a.date||''));
+}
+
+function renderCurrentTab() {
+  const tab = state.currentTab;
+  let raw, containerId, label;
+  if (tab === 'published')  { raw = state.publishedPapers; containerId = 'content-published'; }
+  else if (tab === 'nber')  { raw = state.nberPapers;      containerId = 'content-nber'; }
+  else if (tab === 'arxiv') { raw = state.arxivPapers;     containerId = 'content-arxiv'; }
+  else {
+    // This Week: combined, pre-sorted; applyFilters still applies HF/search/bookmark/watched
+    raw = getThisWeekPapers();
+    containerId = 'content-thisweek';
+  }
+
+  const filtered = tab === 'thisweek' ? applyFiltersThisWeek(raw) : applyFilters(raw);
+  label = `${filtered.length} paper${filtered.length !== 1 ? 's' : ''}`;
+  renderList(filtered, containerId, label, raw);
+  applyKeywordHighlights();
+
+  // Journal error badges
+  if (tab === 'published') {
+    const keyMap = { AER:'aer', Econometrica:'econometrica', QJE:'qje', REStud:'restud',
+                     JPE:'jpe', 'Econ Journal':'econj', JF:'jf', JFE:'jfe', RFS:'rfs',
+                     'AEJ:Applied':'aejapp', JPubEc:'jpubec', JFQA:'jfqa', ReStat:'restat' };
+    document.querySelectorAll('#journalPills .filter-btn[data-journal]').forEach(btn => {
+      const key = keyMap[btn.dataset.journal]; if (!key) return;
+      const existing = btn.querySelector('.err-badge');
+      if (state.publishedErrors[key]) {
+        if (!existing) { const b = document.createElement('span'); b.className='err-badge'; b.title=state.publishedErrors[key]; b.textContent='⚠️'; btn.appendChild(b); }
+      } else { if (existing) existing.remove(); }
+    });
+  }
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab, btnEl) {
+  state.currentTab = tab; savePrefs();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+
+  const isPublished = tab === 'published';
+  const isArxiv     = tab === 'arxiv';
+  document.getElementById('journalPills').style.display = isPublished ? 'flex' : 'none';
+  document.getElementById('arxivPills').style.display   = isArxiv     ? 'flex' : 'none';
+  document.getElementById('filterBar').style.display    = '';
+
+  renderCurrentTab();
+}
+
+// ── Filter setters ────────────────────────────────────────────────────────────
+function setJournalFilter(j, btn) {
+  state.journalFilter = j; savePrefs();
+  document.querySelectorAll('#journalPills .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCurrentTab();
+}
+
+function setArxivFilter(cat, btn) {
+  state.arxivCategory = cat; savePrefs();
+  document.querySelectorAll('#arxivPills .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCurrentTab();
+}
+
+function toggleHF() {
+  state.hfOnly = !state.hfOnly; savePrefs();
+  document.querySelectorAll('.btn-hf-toggle').forEach(el => el.classList.toggle('active', state.hfOnly));
+  renderCurrentTab();
+}
+
+function toggleBookmarkFilter() {
+  state.showBookmarks = !state.showBookmarks; savePrefs();
+  document.getElementById('btnBookmarkFilter').classList.toggle('active', state.showBookmarks);
+  renderCurrentTab();
+}
+
+// This Week applies only HF, bookmark, watched, search filters (no journal/date)
+function applyFiltersThisWeek(papers) {
+  let list = papers;
+  if (state.hfOnly)          list = list.filter(p => p.householdFinance);
+  if (state.showBookmarks)   list = list.filter(p => state.bookmarkUrls.has(p.url));
+  if (state.showWatchedOnly) list = list.filter(p => isWatchedAuthor(p));
+  if (state.searchText) {
+    const q = state.searchText.toLowerCase();
+    list = list.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      (p.authors || '').toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+
+// ── Watched authors ───────────────────────────────────────────────────────────
+function parseWatchedAuthors() {
+  return state.watchedAuthors.split(/[,，]+/).map(a => a.trim().toLowerCase()).filter(Boolean);
+}
+
+function isWatchedAuthor(paper) {
+  const authors = parseWatchedAuthors();
+  if (!authors.length || !paper.authors) return false;
+  const pa = paper.authors.toLowerCase();
+  return authors.some(a => pa.includes(a));
+}
+
+function onWatchedAuthorsInput(val) {
+  state.watchedAuthors = val; savePrefs();
+  renderCurrentTab();
+}
+
+function toggleWatchedFilter() {
+  state.showWatchedOnly = !state.showWatchedOnly; savePrefs();
+  document.getElementById('btnWatchedFilter').classList.toggle('active', state.showWatchedOnly);
+  renderCurrentTab();
+}
+
+// ── Paper notes ───────────────────────────────────────────────────────────────
+function toggleNote(btn, url) {
+  const card    = btn.closest('.paper-card');
+  const noteDiv = card.querySelector('.card-note');
+  const isOpen  = noteDiv.classList.toggle('open');
+  if (isOpen) card.querySelector('.note-input').focus();
+}
+
+function onNoteInput(el, url) {
+  const text = el.value;
+  if (text.trim()) state.notes[url] = text;
+  else delete state.notes[url];
+  lsSet(LS.notes, state.notes);
+  // Update 📝 button indicator
+  const btn = el.closest('.paper-card').querySelector('[title="Notes"]');
+  if (btn) btn.classList.toggle('note-on', !!text.trim());
+}
+
+function onSearch(val) {
+  state.searchText = val.trim();
+  renderCurrentTab();
+}
+
+function onKwInput(val) {
+  state.keywords = val; savePrefs();
+  applyKeywordHighlights();
+}
+
+// Parse comma/space-separated keywords into an array of non-empty strings
+function parseKeywords() {
+  return state.keywords.split(/[,，\s]+/).map(k => k.trim()).filter(Boolean);
+}
+
+// Apply keyword highlights to all rendered cards (called after render and on input)
+function applyKeywordHighlights() {
+  const kws = parseKeywords();
+  document.querySelectorAll('.paper-card').forEach(card => {
+    card.classList.remove('card-kw-highlight');
+    // Reset title and authors text (strip old marks)
+    card.querySelectorAll('.card-title a, .card-authors, .card-abstract').forEach(el => {
+      if (el._origHTML !== undefined) el.innerHTML = el._origHTML;
+    });
+    if (!kws.length) return;
+
+    const titleEl   = card.querySelector('.card-title a');
+    const authorsEl = card.querySelector('.card-authors');
+    const absEl     = card.querySelector('.card-abstract');
+
+    let hit = false;
+    [titleEl, authorsEl, absEl].forEach(el => {
+      if (!el) return;
+      if (el._origHTML === undefined) el._origHTML = el.innerHTML;
+      const text = el._origHTML;
+      const regex = new RegExp(`(${kws.map(k => k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})`, 'gi');
+      if (regex.test(text)) {
+        hit = true;
+        el.innerHTML = text.replace(regex, '<mark class="kw-mark">$1</mark>');
+      }
+    });
+    if (hit) card.classList.add('card-kw-highlight');
+  });
+}
+
+function setDateFilter(d, btn) {
+  state.dateFilter = d; savePrefs();
+  document.querySelectorAll('[data-date]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCurrentTab();
+}
+
+function setSortBy(s, btn) {
+  state.sortBy = s; savePrefs();
+  document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCurrentTab();
+}
+
+// ── Read / Bookmark ───────────────────────────────────────────────────────────
+function toggleRead(btn, url) {
+  const card = btn.closest('.paper-card');
+  if (state.readUrls.has(url)) {
+    state.readUrls.delete(url); btn.classList.remove('on'); card.classList.remove('is-read');
+    btn.title = 'Mark read';
+  } else {
+    state.readUrls.add(url); btn.classList.add('on'); card.classList.add('is-read');
+    btn.title = 'Mark unread';
+  }
+  lsSet(LS.read, [...state.readUrls]);
+}
+
+function toggleBookmark(btn, url) {
+  if (state.bookmarkUrls.has(url)) {
+    state.bookmarkUrls.delete(url); btn.classList.remove('on'); btn.title = 'Bookmark';
+  } else {
+    state.bookmarkUrls.add(url); btn.classList.add('on'); btn.title = 'Remove bookmark';
+  }
+  lsSet(LS.bookmarks, [...state.bookmarkUrls]);
+  if (state.showBookmarks) renderCurrentTab(); // re-filter if in bookmarks-only mode
+}
+
+// ── Abstract toggle ───────────────────────────────────────────────────────────
+function toggleAbstract(btn) {
+  const abs = btn.previousElementSibling;
+  const open = abs.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.childNodes[0].textContent = open ? 'Show less ' : 'Show more ';
+}
+
+// ── Tab labels (HF counts + new counts) ──────────────────────────────────────
+function updateTabLabels() {
+  function buildLabel(base, arr) {
+    const hfN  = arr.filter(p => p.householdFinance).length;
+    const newN = arr.filter(p => isNew(p)).length;
+    let label = base;
+    const parts = [];
+    if (hfN)  parts.push(`${hfN} 🏠`);
+    if (newN) parts.push(`${newN} 🆕`);
+    if (parts.length) label += ` (${parts.join(' · ')})`;
+    return label;
+  }
+  document.getElementById('tab-published').textContent = buildLabel('Published Papers',    state.publishedPapers);
+  document.getElementById('tab-nber').textContent      = buildLabel('NBER Working Papers', state.nberPapers);
+  document.getElementById('tab-arxiv').textContent     = buildLabel('arXiv Preprints',     state.arxivPapers);
+  const twPapers = getThisWeekPapers();
+  document.getElementById('tab-thisweek').textContent  = buildLabel('🗓 This Week',        twPapers);
+}
+
+// ── arXiv category label map ──────────────────────────────────────────────────
+const ARXIV_CAT_LABELS = {
+  'econ.EM': 'Econometrics',
+  'econ.GN': 'General Economics',
+  'econ.TH': 'Theoretical Economics',
+  'econ.AP': 'Applications',
+  'econ.GN': 'General Economics',
+};
+function arxivCatLabel(c) { return ARXIV_CAT_LABELS[c] || c; }
+
+// ── arXiv category pills ──────────────────────────────────────────────────────
+function buildArxivPills() {
+  const cats = [...new Set(state.arxivPapers.map(p => p.subCategory).filter(Boolean))].sort();
+  const container = document.getElementById('arxivPills');
+  container.innerHTML = `<button class="filter-btn${state.arxivCategory==='all'?' active':''}" data-cat="all" onclick="setArxivFilter('all',this)">All</button>`;
+  cats.forEach(c => {
+    const active = state.arxivCategory === c ? ' active' : '';
+    const label = arxivCatLabel(c);
+    container.innerHTML += `<button class="filter-btn${active}" data-cat="${escHtml(c)}" onclick="setArxivFilter('${escHtml(c)}',this)">${escHtml(label)}</button>`;
+  });
+}
+
+// ── Error banners ─────────────────────────────────────────────────────────────
+function showErrorBanner(panelId, errors) {
+  const banner = document.getElementById(`errorBanner-${panelId}`);
+  if (!banner) return;
+  const failed = Object.keys(errors).filter(k => errors[k]);
+  if (!failed.length) { banner.classList.remove('visible'); return; }
+  banner.textContent = `⚠️ Failed to load: ${failed.join(', ')}. Partial data shown.`;
+  banner.classList.add('visible');
+}
+
+// ── Last updated ──────────────────────────────────────────────────────────────
+function updateLastUpdated(iso) {
+  if (!iso) return;
+  try {
+    const d = new Date(iso);
+    document.getElementById('lastUpdated').textContent =
+      `Updated ${d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
+  } catch {}
+}
+
+// ── Restore persisted UI state ────────────────────────────────────────────────
+function restoreUIState() {
+  if (state.hfOnly)       document.querySelectorAll('.btn-hf-toggle').forEach(el => el.classList.add('active'));
+  if (state.showBookmarks) document.getElementById('btnBookmarkFilter').classList.add('active');
+
+  document.querySelectorAll('[data-date]').forEach(b => b.classList.toggle('active', b.dataset.date === state.dateFilter));
+  document.querySelectorAll('[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === state.sortBy));
+
+  if (state.journalFilter !== 'all') {
+    document.querySelectorAll('#journalPills .filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.journal === state.journalFilter);
+    });
+  }
+
+  if (state.keywords)        document.getElementById('kwInput').value             = state.keywords;
+  if (state.watchedAuthors)  document.getElementById('watchedAuthorsInput').value = state.watchedAuthors;
+  if (state.showWatchedOnly) document.getElementById('btnWatchedFilter').classList.add('active');
+
+  // Switch to persisted tab
+  if (state.currentTab !== 'published') {
+    const btn = document.querySelector(`[data-tab="${state.currentTab}"]`);
+    if (btn) switchTab(state.currentTab, btn);
+  }
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function getCurrentPapers() {
+  const tab = state.currentTab;
+  let raw = tab === 'published' ? state.publishedPapers
+          : tab === 'nber'      ? state.nberPapers
+          :                       state.arxivPapers;
+  return applyFilters(raw);
+}
+
+function downloadFile(content, filename, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function exportCSV() {
+  const papers = getCurrentPapers();
+  const rows   = [['Title','Authors','Journal','Date','URL','HF','Bookmarked','Read']];
+  papers.forEach(p => rows.push([
+    `"${(p.title   ||'').replace(/"/g,'""')}"`,
+    `"${(p.authors ||'').replace(/"/g,'""')}"`,
+    `"${(p.journal ||'').replace(/"/g,'""')}"`,
+    p.date || '',
+    p.url  || '',
+    p.householdFinance ? 'true' : 'false',
+    state.bookmarkUrls.has(p.url) ? 'true' : 'false',
+    state.readUrls.has(p.url)     ? 'true' : 'false',
+  ]));
+  downloadFile(rows.map(r => r.join(',')).join('\n'), 'papers.csv', 'text/csv');
+}
+
+function exportBibTeX() {
+  const papers = getCurrentPapers();
+  const entries = papers.map(p => {
+    const year    = p.date ? p.date.slice(0,4) : '';
+    const keyBase = (p.journal || 'WP').replace(/\s+/g,'') + year;
+    const wordKey = p.title.split(/\s+/).slice(0,3).map(w => w.replace(/[^A-Za-z]/g,'')).join('');
+    const key     = `${keyBase}_${wordKey}`;
+    const type    = (p.category === 'nber' || p.category === 'arxiv') ? 'techreport' : 'article';
+    const authors = (p.authors || '').split(/,\s*/).join(' and ');
+    if (type === 'techreport') {
+      return `@techreport{${key},\n  title       = {${p.title}},\n  author      = {${authors}},\n  institution = {${p.journalFull}},\n  year        = {${year}},\n  url         = {${p.url}}\n}`;
+    }
+    return `@article{${key},\n  title   = {${p.title}},\n  author  = {${authors}},\n  journal = {${p.journalFull}},\n  year    = {${year}},\n  url     = {${p.url}}\n}`;
+  });
+  downloadFile(entries.join('\n\n'), 'papers.bib', 'text/plain');
+}
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
+async function loadPublished() {
+  try {
+    const res = await fetch('/api/papers');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    state.publishedPapers = data.papers || [];
+    state.publishedErrors = data.errors || {};
+    state.lastUpdatedPublished = data.lastUpdated;
+    updateLastUpdated(data.lastUpdated);
+    showErrorBanner('published', state.publishedErrors);
+    if (state.currentTab === 'published') renderCurrentTab();
+    updateTabLabels();
+  } catch (err) {
+    document.getElementById('content-published').innerHTML =
+      `<div class="empty-state"><div class="icon">⚠️</div><p>${escHtml(err.message)}</p></div>`;
+  }
+}
+
+async function loadWorkingPapers() {
+  try {
+    const res = await fetch('/api/working-papers');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const all  = data.papers || [];
+    state.nberPapers  = all.filter(p => p.category === 'nber');
+    state.arxivPapers = all.filter(p => p.category === 'arxiv');
+    state.workingErrors = data.errors || {};
+
+    if (!state.lastUpdatedPublished) updateLastUpdated(data.lastUpdated);
+
+    showErrorBanner('nber',  state.workingErrors.nber  ? { nber:  state.workingErrors.nber  } : {});
+    showErrorBanner('arxiv', state.workingErrors.arxiv ? { arxiv: state.workingErrors.arxiv } : {});
+
+    buildArxivPills();
+
+    if (state.currentTab === 'nber')  renderCurrentTab();
+    if (state.currentTab === 'arxiv') renderCurrentTab();
+    updateTabLabels();
+  } catch (err) {
+    ['nber','arxiv'].forEach(id => {
+      document.getElementById(`content-${id}`).innerHTML =
+        `<div class="empty-state"><div class="icon">⚠️</div><p>${escHtml(err.message)}</p></div>`;
+    });
+  }
+}
+
+async function handleRefresh() {
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled = true; btn.classList.add('spinning');
+  ['published','nber','arxiv'].forEach(id => {
+    document.getElementById(`content-${id}`).innerHTML =
+      `<div class="spinner-wrap"><div class="spinner"></div><span>Refreshing…</span></div>`;
+  });
+  try {
+    await fetch('/api/refresh');
+    await Promise.all([loadPublished(), loadWorkingPapers()]);
+  } catch (err) { alert('Refresh failed: ' + err.message); }
+  finally { btn.disabled = false; btn.classList.remove('spinning'); }
+}
+
+// ── Info panel ────────────────────────────────────────────────────────────────
+function toggleInfo() {
+  document.getElementById('infoToggle').classList.toggle('open');
+  document.getElementById('infoBody').classList.toggle('open');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  restoreUIState();
+  await Promise.all([loadPublished(), loadWorkingPapers()]);
+
+  setInterval(async () => {
+    try { await fetch('/api/refresh'); await Promise.all([loadPublished(), loadWorkingPapers()]); }
+    catch (e) { console.warn('Auto-refresh failed:', e.message); }
+  }, 60 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

@@ -126,7 +126,7 @@ const RSS_SOURCES = [
 // CrossRef sources: journals whose RSS feeds are dead or JS-blocked
 // CrossRef Polite Pool: include mailto in User-Agent for better rate limits
 const CROSSREF_UA = 'EconFinanceTracker/1.0 (mailto:research@tracker.local)';
-const CROSSREF_ROWS = 30;
+const CROSSREF_ROWS = 100;
 
 const CROSSREF_JOURNAL_SOURCES = [
   {

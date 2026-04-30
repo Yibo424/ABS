@@ -258,8 +258,9 @@ const ARXIV_SOURCE = {
   abs: null,
   category: 'arxiv',
   type: 'working-paper',
-  rss: 'https://rss.arxiv.org/rss/econ',
 };
+
+const ARXIV_ROWS = 200;
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 
@@ -483,6 +484,55 @@ async function fetchNBER() {
   return [];
 }
 
+// Fetch arXiv econ papers via arXiv API (Atom XML), replacing the RSS feed.
+async function fetchArxiv() {
+  const src = ARXIV_SOURCE;
+  try {
+    const url = `https://export.arxiv.org/api/query?search_query=cat:econ.*&max_results=${ARXIV_ROWS}&sortBy=submittedDate&sortOrder=descending`;
+    const { data } = await axios.get(url, {
+      headers: { 'User-Agent': CROSSREF_UA },
+      timeout: 30000,
+    });
+    const $ = cheerio.load(data, { xmlMode: true });
+    const results = [];
+    $('entry').each((_, el) => {
+      const title = cleanTitle($(el).find('title').first().text());
+      const id    = $(el).find('id').first().text().trim().replace('http://', 'https://');
+      const published = $(el).find('published').first().text().trim();
+      const abstract  = $(el).find('summary').first().text().replace(/\s+/g, ' ').trim().slice(0, 3000);
+      const authors   = $(el).find('author name').map((_, a) => $(a).text()).get().slice(0, 6).join(', ');
+      const cats      = $(el).find('category').map((_, c) => $(c).attr('term')).get();
+      const subCategory = cats.find(c => /^econ\.[A-Z]{2}$/.test(c)) || null;
+      results.push({
+        title,
+        url: id,
+        journal: src.journal,
+        journalFull: src.journalFull,
+        abs: src.abs,
+        category: src.category,
+        authors,
+        date: formatDate(published),
+        type: src.type,
+        abstract,
+        subCategory,
+        householdFinance: isHouseholdFinance(title),
+      });
+    });
+    staleSourceCache[src.key] = results;
+    delete sourceErrors[src.key];
+    console.log(`[arxiv] API: fetched ${results.length} papers`);
+    return results;
+  } catch (err) {
+    console.error(`[arxiv] API error: ${err.message}`);
+    if (staleSourceCache[src.key]) {
+      console.warn(`[arxiv] Serving stale cache due to API failure`);
+      return staleSourceCache[src.key];
+    }
+    sourceErrors[src.key] = err.message;
+    return [];
+  }
+}
+
 // ── Aggregate fetchers ────────────────────────────────────────────────────────
 
 async function fetchAllPapers() {
@@ -504,7 +554,7 @@ async function fetchAllPapers() {
 async function fetchAllWorkingPapers() {
   const results = await Promise.all([
     fetchNBER(),
-    fetchRSS(ARXIV_SOURCE),
+    fetchArxiv(),
   ]);
   return results.flat();
 }

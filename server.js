@@ -193,6 +193,51 @@ const CROSSREF_JOURNAL_SOURCES = [
     type: 'issue',
     issn: '0022-1090',
   },
+  {
+    key: 'jel',
+    journal: 'JEL',
+    journalFull: 'Journal of Economic Literature',
+    abs: '4*',
+    category: 'economics',
+    type: 'issue',
+    issn: '0022-0515',
+  },
+  {
+    key: 'jep',
+    journal: 'JEP',
+    journalFull: 'Journal of Economic Perspectives',
+    abs: '4',
+    category: 'economics',
+    type: 'issue',
+    issn: '0895-3309',
+  },
+  {
+    key: 'aejpol',
+    journal: 'AEJ:Policy',
+    journalFull: 'American Economic Journal: Economic Policy',
+    abs: '4',
+    category: 'economics',
+    type: 'issue',
+    issn: '1945-774X',
+  },
+  {
+    key: 'aejmacro',
+    journal: 'AEJ:Macro',
+    journalFull: 'American Economic Journal: Macroeconomics',
+    abs: '4',
+    category: 'economics',
+    type: 'issue',
+    issn: '1945-7707',
+  },
+  {
+    key: 'aejmicro',
+    journal: 'AEJ:Micro',
+    journalFull: 'American Economic Journal: Microeconomics',
+    abs: '4',
+    category: 'economics',
+    type: 'issue',
+    issn: '1945-7669',
+  },
 ];
 
 // NBER: RSS dead (redirects to 404). Use CrossRef DOI prefix 10.3386.
@@ -469,7 +514,7 @@ async function fetchAllWorkingPapers() {
 // Each endpoint only reports errors relevant to its own sources,
 // so a NBER fetch failure never leaks into the published-papers error list.
 const PUBLISHED_KEYS = new Set(
-  ['aer', 'econometrica', 'qje', 'restud', 'jpe', 'econj', 'jf', 'jfe', 'rfs', 'jpubec', 'aejapp', 'jfqa', 'restat']
+  ['aer', 'econometrica', 'qje', 'restud', 'jpe', 'econj', 'jf', 'jfe', 'rfs', 'jpubec', 'aejapp', 'jfqa', 'restat', 'jel', 'jep', 'aejpol', 'aejmacro', 'aejmicro']
 );
 const WORKING_KEYS = new Set(['nber', 'arxiv']);
 

@@ -127,7 +127,7 @@ const RSS_SOURCES = [
 // CrossRef Polite Pool: include mailto in User-Agent for better rate limits
 const CROSSREF_UA = 'EconFinanceTracker/1.0 (mailto:research@tracker.local)';
 const CROSSREF_ROWS = 50;
-const NBER_ROWS = 200;
+const NBER_ROWS = 500;
 
 const CROSSREF_JOURNAL_SOURCES = [
   {

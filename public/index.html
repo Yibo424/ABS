@@ -318,6 +318,10 @@
       <div class="filter-sep"></div>
       <button class="btn-hf-toggle" id="btnHFToggle2" onclick="toggleHF()">🏠 HF Only</button>
     </div>
+    <!-- This Week controls (shown when This Week tab active) -->
+    <div id="thisweekPills" style="display:none;flex-wrap:nowrap;gap:6px;align-items:center;flex-shrink:0;">
+      <button class="btn-hf-toggle" id="btnHFToggle3" onclick="toggleHF()">🏠 HF Only</button>
+    </div>
   </div>
 
   <!-- Row 2: search + date + sort + bookmarks + export -->
@@ -691,11 +695,13 @@ function switchTab(tab, btnEl) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`panel-${tab}`).classList.add('active');
 
-  const isPublished = tab === 'published';
-  const isArxiv     = tab === 'arxiv';
-  document.getElementById('journalPills').style.display = isPublished ? 'flex' : 'none';
-  document.getElementById('arxivPills').style.display   = isArxiv     ? 'flex' : 'none';
-  document.getElementById('filterBar').style.display    = '';
+  const isPublished  = tab === 'published';
+  const isArxiv      = tab === 'arxiv';
+  const isThisWeek   = tab === 'thisweek';
+  document.getElementById('journalPills').style.display    = isPublished ? 'flex' : 'none';
+  document.getElementById('arxivPills').style.display      = isArxiv     ? 'flex' : 'none';
+  document.getElementById('thisweekPills').style.display   = isThisWeek  ? 'flex' : 'none';
+  document.getElementById('filterBar').style.display       = '';
 
   renderCurrentTab();
 }
@@ -1045,8 +1051,9 @@ async function loadWorkingPapers() {
 
     buildArxivPills();
 
-    if (state.currentTab === 'nber')  renderCurrentTab();
-    if (state.currentTab === 'arxiv') renderCurrentTab();
+    if (state.currentTab === 'nber')     renderCurrentTab();
+    if (state.currentTab === 'arxiv')    renderCurrentTab();
+    if (state.currentTab === 'thisweek') renderCurrentTab();
     updateTabLabels();
   } catch (err) {
     ['nber','arxiv'].forEach(id => {

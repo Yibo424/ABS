@@ -438,7 +438,7 @@ async function fetchNBER() {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const url = `https://api.crossref.org/prefixes/${src.prefix}/works?rows=${NBER_ROWS}&sort=published&order=desc&select=title,author,URL,published,abstract`;
+      const url = `https://api.crossref.org/prefixes/${src.prefix}/works?rows=${NBER_ROWS}&sort=deposited&order=desc&select=title,author,URL,published,deposited,abstract`;
       const { data } = await axios.get(url, {
         headers: { 'User-Agent': CROSSREF_UA },
         timeout: 20000,
@@ -456,7 +456,7 @@ async function fetchNBER() {
           abs: src.abs,
           category: src.category,
           authors: formatCrossRefAuthors(item.author),
-          date: formatCrossRefDate(item.published && item.published['date-parts']),
+          date: formatCrossRefDate((item.deposited && item.deposited['date-parts']) || (item.published && item.published['date-parts'])),
           type: src.type,
           abstract: stripJATS(item.abstract),
           subCategory: null,

@@ -46,8 +46,14 @@ const HF_KEYWORDS = [
   'financial advice', 'robo-advisor', 'investment behavior', 'investor behavior',
   'mortgage', 'mortgages', 'student loan', 'student debt', 'credit card',
   'consumer credit', 'consumer debt', 'household borrowing', 'household leverage',
-  'refinancing', 'foreclosure', 'default', 'delinquency', 'payday loan', 'auto loan',
-  'retirement savings', 'retirement wealth', 'pension', '401(k)', 'defined contribution',
+  'refinancing', 'foreclosure', 'payday loan', 'auto loan',
+  // 'default' / 'delinquency' alone are too generic (sovereign default, youth
+  // delinquency) — only count them in a household-debt context.
+  'loan default', 'mortgage default', 'debt default', 'borrower default',
+  'consumer default', 'household default', 'credit card default', 'payment default',
+  'loan delinquency', 'mortgage delinquency', 'debt delinquency', 'payment delinquency',
+  'consumer delinquency', 'household delinquency', 'credit card delinquency',
+  'retirement saving', 'retirement savings', 'retirement wealth', 'pension', '401(k)', 'defined contribution',
   'annuity', 'social security', 'life insurance', 'consumption smoothing',
   'consumption inequality', 'buffer stock', 'precautionary savings', 'income risk',
   'income shocks', 'income uncertainty', 'earnings risk', 'financial fragility',
@@ -309,6 +315,15 @@ function cleanTitle(raw) {
   return (raw || '').trim().replace(/^[\u2018\u2019'"]+|[\u2018\u2019'"]+$/g, '').trim();
 }
 
+// Journal issue feeds (both RSS and CrossRef) include boilerplate entries
+// alongside real articles -- front/back matter, editorial boards, issue index
+// pages. These aren't papers; filter them out. Corrigenda/errata are kept
+// since they reference real content.
+const NON_ARTICLE_TITLE = /^(front|back)\s*matter\b|^issue information\b|^editorial board\b|^table of contents\b|^cover image\b|^volume information\b|^submission of manuscripts\b|^announcements?\b|^author index\b|^subject index\b|^in this issue\b/i;
+function isNonArticle(title) {
+  return NON_ARTICLE_TITLE.test((title || '').trim());
+}
+
 // Extract plain-text abstract from RSS item description/content fields
 function extractAbstract(item) {
   // Prefer full-content fields; avoid contentSnippet which rss-parser truncates to ~200 chars
@@ -331,22 +346,24 @@ async function fetchRSS(src) {
   try {
     const feed = await rssParser.parseURL(src.rss);
     delete sourceErrors[src.key];
-    const results = feed.items.map(item => ({
-      title: cleanTitle(item.title),
-      url: item.link || '',
-      journal: src.journal,
-      journalFull: src.journalFull,
-      abs: src.abs,
-      category: src.category,
-      authors: extractAuthors(item),
-      date: formatDate(item.pubDate || item.isoDate),
-      type: src.type,
-      abstract: extractAbstract(item),
-      subCategory: src.key === 'arxiv'
-        ? ((item.categories || []).find(c => /^econ\.[A-Z]{2}$/.test(c)) || null)
-        : null,
-      householdFinance: isHouseholdFinance(cleanTitle(item.title)),
-    }));
+    const results = feed.items
+      .filter(item => !isNonArticle(cleanTitle(item.title)))
+      .map(item => ({
+        title: cleanTitle(item.title),
+        url: item.link || '',
+        journal: src.journal,
+        journalFull: src.journalFull,
+        abs: src.abs,
+        category: src.category,
+        authors: extractAuthors(item),
+        date: formatDate(item.pubDate || item.isoDate),
+        type: src.type,
+        abstract: extractAbstract(item),
+        subCategory: src.key === 'arxiv'
+          ? ((item.categories || []).find(c => /^econ\.[A-Z]{2}$/.test(c)) || null)
+          : null,
+        householdFinance: isHouseholdFinance(cleanTitle(item.title)),
+      }));
     staleSourceCache[src.key] = results;
     return results;
   } catch (err) {
@@ -393,7 +410,7 @@ async function fetchCrossRefJournal(src) {
       console.log(`[${src.key}] CrossRef: fetched ${items.length} papers`);
       const results = items
         .filter(item => item.title && item.title[0] && item.URL)
-        .filter(item => !/^front matter$/i.test(item.title[0]))
+        .filter(item => !isNonArticle(item.title[0]))
         .map(item => ({
           title: item.title[0].trim(),
           url: item.URL,
@@ -431,6 +448,16 @@ async function fetchCrossRefJournal(src) {
   return [];
 }
 
+// NBER links to a paper's abstract/landing page rather than straight to the PDF.
+// NBER gates PDF downloads for recent papers (free accounts get 3/year; older
+// papers become ungated after the embargo period) — a direct PDF link 403s once
+// that quota is used. The landing page always loads and still shows the abstract,
+// with NBER's own registration/access options if the PDF itself is gated.
+function nberLandingUrl(doi, fallbackUrl) {
+  const m = /^10\.3386\/(w\d+)$/.exec(doi || '');
+  return m ? `https://www.nber.org/papers/${m[1]}` : fallbackUrl;
+}
+
 // Fetch NBER working papers via CrossRef DOI prefix 10.3386
 // Same retry + stale-fallback pattern as fetchCrossRefJournal.
 async function fetchNBER() {
@@ -438,7 +465,11 @@ async function fetchNBER() {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const url = `https://api.crossref.org/prefixes/${src.prefix}/works?rows=${NBER_ROWS}&sort=deposited&order=desc&select=title,author,URL,published,deposited,abstract`;
+      // sort=published (not deposited): NBER periodically re-deposits metadata for
+      // old papers, which bumps decades-old papers to the top of a deposited-desc
+      // sort and mislabels them as brand new. published=desc reflects the paper's
+      // actual issue date.
+      const url = `https://api.crossref.org/prefixes/${src.prefix}/works?rows=${NBER_ROWS}&sort=published&order=desc&select=title,author,URL,DOI,published,deposited,abstract`;
       const { data } = await axios.get(url, {
         headers: { 'User-Agent': CROSSREF_UA },
         timeout: 20000,
@@ -450,13 +481,13 @@ async function fetchNBER() {
         .filter(item => item.title && item.title[0] && item.URL)
         .map(item => ({
           title: item.title[0].trim(),
-          url: item.URL,
+          url: nberLandingUrl(item.DOI, item.URL),
           journal: src.journal,
           journalFull: src.journalFull,
           abs: src.abs,
           category: src.category,
           authors: formatCrossRefAuthors(item.author),
-          date: formatCrossRefDate((item.deposited && item.deposited['date-parts']) || (item.published && item.published['date-parts'])),
+          date: formatCrossRefDate((item.published && item.published['date-parts']) || (item.deposited && item.deposited['date-parts'])),
           type: src.type,
           abstract: stripJATS(item.abstract),
           subCategory: null,
@@ -608,21 +639,39 @@ app.get('/api/working-papers', async (req, res) => {
   }
 });
 
+// Refreshes the shared cache. Used by the server's own hourly timer and by the
+// manual "Refresh" button — never by per-client polling (see REFRESH_COOLDOWN_MS).
+async function refreshCache() {
+  const [papers, workingPapers] = await Promise.all([
+    fetchAllPapers(),
+    fetchAllWorkingPapers(),
+  ]);
+  cache.papers = papers;
+  cache.papersTimestamp = Date.now();
+  cache.workingPapers = workingPapers;
+  cache.workingPapersTimestamp = Date.now();
+  return { papers, workingPapers };
+}
+
+// Floor on how often /api/refresh may hit upstream, regardless of caller —
+// protects CrossRef/Wiley/Elsevier from being hammered if the endpoint is
+// called repeatedly (it's unauthenticated and publicly reachable).
+const REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
+let lastManualRefresh = 0;
+
 app.get('/api/refresh', async (req, res) => {
-  // Clear cache and errors
-  cache = { papers: null, papersTimestamp: null, workingPapers: null, workingPapersTimestamp: null };
+  const sinceLast = Date.now() - lastManualRefresh;
+  if (sinceLast < REFRESH_COOLDOWN_MS) {
+    return res.status(429).json({
+      error: 'Refreshed too recently',
+      retryAfterMs: REFRESH_COOLDOWN_MS - sinceLast,
+    });
+  }
+  lastManualRefresh = Date.now();
   Object.keys(sourceErrors).forEach(k => delete sourceErrors[k]);
 
   try {
-    const [papers, workingPapers] = await Promise.all([
-      fetchAllPapers(),
-      fetchAllWorkingPapers(),
-    ]);
-    cache.papers = papers;
-    cache.papersTimestamp = Date.now();
-    cache.workingPapers = workingPapers;
-    cache.workingPapersTimestamp = Date.now();
-
+    const { papers, workingPapers } = await refreshCache();
     res.json({
       success: true,
       papersCount: papers.length,
@@ -652,3 +701,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  Local:   http://localhost:${PORT}`);
   console.log(`  Network: http://${localIP}:${PORT}  ← 其他设备用这个地址`);
 });
+
+// Server-side refresh timer: keeps the cache warm on its own schedule so clients
+// never need to trigger a fetch themselves. Without this, each open browser tab
+// used to call /api/refresh every hour independently — with several tabs open
+// that meant redundant full re-fetches across ~18 journal sources hitting
+// CrossRef/Wiley/Elsevier concurrently.
+setInterval(() => {
+  refreshCache().catch(err => console.error('Scheduled refresh failed:', err.message));
+}, CACHE_TTL);

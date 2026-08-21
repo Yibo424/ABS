@@ -905,7 +905,6 @@ const ARXIV_CAT_LABELS = {
   'econ.GN': 'General Economics',
   'econ.TH': 'Theoretical Economics',
   'econ.AP': 'Applications',
-  'econ.GN': 'General Economics',
 };
 function arxivCatLabel(c) { return ARXIV_CAT_LABELS[c] || c; }
 
@@ -969,6 +968,7 @@ function restoreUIState() {
 // ── Export ────────────────────────────────────────────────────────────────────
 function getCurrentPapers() {
   const tab = state.currentTab;
+  if (tab === 'thisweek') return applyFiltersThisWeek(getThisWeekPapers());
   let raw = tab === 'published' ? state.publishedPapers
           : tab === 'nber'      ? state.nberPapers
           :                       state.arxivPapers;
@@ -1071,7 +1071,11 @@ async function handleRefresh() {
       `<div class="spinner-wrap"><div class="spinner"></div><span>Refreshing…</span></div>`;
   });
   try {
-    await fetch('/api/refresh');
+    const res = await fetch('/api/refresh');
+    if (res.status === 429) {
+      const { retryAfterMs } = await res.json();
+      alert(`Already refreshed recently — try again in ${Math.ceil(retryAfterMs / 60000)} min.`);
+    }
     await Promise.all([loadPublished(), loadWorkingPapers()]);
   } catch (err) { alert('Refresh failed: ' + err.message); }
   finally { btn.disabled = false; btn.classList.remove('spinning'); }
@@ -1088,8 +1092,11 @@ function toggleInfo() {
   restoreUIState();
   await Promise.all([loadPublished(), loadWorkingPapers()]);
 
+  // The server refreshes its own cache hourly (see server.js), so a plain
+  // re-fetch here just picks up whatever the server last cached — cheap, and
+  // doesn't force every open tab to trigger its own upstream fetch.
   setInterval(async () => {
-    try { await fetch('/api/refresh'); await Promise.all([loadPublished(), loadWorkingPapers()]); }
+    try { await Promise.all([loadPublished(), loadWorkingPapers()]); }
     catch (e) { console.warn('Auto-refresh failed:', e.message); }
   }, 60 * 60 * 1000);
 })();

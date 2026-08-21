@@ -465,11 +465,12 @@ async function fetchNBER() {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // sort=published (not deposited): NBER periodically re-deposits metadata for
+      // sort=created (not deposited): NBER periodically re-deposits metadata for
       // old papers, which bumps decades-old papers to the top of a deposited-desc
-      // sort and mislabels them as brand new. published=desc reflects the paper's
-      // actual issue date.
-      const url = `https://api.crossref.org/prefixes/${src.prefix}/works?rows=${NBER_ROWS}&sort=published&order=desc&select=title,author,URL,DOI,published,deposited,abstract`;
+      // sort and mislabels them as brand new. `created` (DOI first-registered date)
+      // is set once and never touched again, so it doesn't get disturbed by that —
+      // and unlike `published`, it carries day-level granularity, not just month.
+      const url = `https://api.crossref.org/prefixes/${src.prefix}/works?rows=${NBER_ROWS}&sort=created&order=desc&select=title,author,URL,DOI,published,deposited,created,abstract`;
       const { data } = await axios.get(url, {
         headers: { 'User-Agent': CROSSREF_UA },
         timeout: 20000,
@@ -487,7 +488,7 @@ async function fetchNBER() {
           abs: src.abs,
           category: src.category,
           authors: formatCrossRefAuthors(item.author),
-          date: formatCrossRefDate((item.published && item.published['date-parts']) || (item.deposited && item.deposited['date-parts'])),
+          date: formatCrossRefDate((item.created && item.created['date-parts']) || (item.published && item.published['date-parts']) || (item.deposited && item.deposited['date-parts'])),
           type: src.type,
           abstract: stripJATS(item.abstract),
           subCategory: null,

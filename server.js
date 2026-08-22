@@ -300,6 +300,34 @@ function formatDate(raw) {
   }
 }
 
+const MONTH_NAMES = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+};
+
+// Elsevier's ScienceDirect RSS feeds (JFE, JPubEc) carry no <pubDate>/<dc:date>
+// at all -- the issue date only shows up as plain text in the description,
+// e.g. "Publication date: October 2026". Without this every item from those
+// two feeds gets date: null, which silently drops them from date filters,
+// sorting, and the This Week tab. Built as an explicit Y-M-01 string (not a
+// Date round-trip) to avoid local-timezone rollover on "Month Year" parsing.
+function extractElsevierDate(text) {
+  if (!text) return null;
+  // Advance/in-press articles carry a full date: "Available online 31 July 2026"
+  const online = /Available online\s+(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/.exec(text);
+  if (online) {
+    const month = MONTH_NAMES[online[2].toLowerCase()];
+    if (month) return `${online[3]}-${String(month).padStart(2, '0')}-${online[1].padStart(2, '0')}`;
+  }
+  // Issue-assigned articles only carry "Publication date: October 2026"
+  const issue = /Publication date:\s*([A-Za-z]+)\s+(\d{4})/.exec(text);
+  if (issue) {
+    const month = MONTH_NAMES[issue[1].toLowerCase()];
+    if (month) return `${issue[2]}-${String(month).padStart(2, '0')}-01`;
+  }
+  return null;
+}
+
 function extractAuthors(item) {
   return (
     item.dcCreator ||
@@ -356,7 +384,7 @@ async function fetchRSS(src) {
         abs: src.abs,
         category: src.category,
         authors: extractAuthors(item),
-        date: formatDate(item.pubDate || item.isoDate),
+        date: formatDate(item.pubDate || item.isoDate) || extractElsevierDate(item.content),
         type: src.type,
         abstract: extractAbstract(item),
         subCategory: src.key === 'arxiv'

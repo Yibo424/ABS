@@ -586,11 +586,11 @@ function renderCard(p) {
       </div>
       <div class="card-right">
         <button class="card-action${isBookmark ? ' on' : ''}" title="${isBookmark ? 'Remove bookmark' : 'Bookmark'}"
-                onclick="toggleBookmark(this,'${urlEnc}')">🔖</button>
+                onclick="toggleBookmark(this)">🔖</button>
         <button class="card-action${isRead ? ' on' : ''}" title="${isRead ? 'Mark unread' : 'Mark read'}"
-                onclick="toggleRead(this,'${urlEnc}')">✓</button>
+                onclick="toggleRead(this)">✓</button>
         <button class="card-action${hasNote ? ' note-on' : ''}" title="Notes"
-                onclick="toggleNote(this,'${urlEnc}')">📝</button>
+                onclick="toggleNote(this)">📝</button>
         <span class="card-date">${escHtml(fmtDate(p.date))}</span>
       </div>
     </div>
@@ -599,7 +599,7 @@ function renderCard(p) {
     ${abstractBtn}
     <div class="card-note${hasNote ? ' open' : ''}">
       <textarea class="note-input" placeholder="Add notes…"
-                oninput="onNoteInput(this,'${urlEnc}')">${escHtml(noteVal)}</textarea>
+                oninput="onNoteInput(this)">${escHtml(noteVal)}</textarea>
     </div>
   </div>`;
 }
@@ -773,14 +773,15 @@ function toggleWatchedFilter() {
 }
 
 // ── Paper notes ───────────────────────────────────────────────────────────────
-function toggleNote(btn, url) {
+function toggleNote(btn) {
   const card    = btn.closest('.paper-card');
   const noteDiv = card.querySelector('.card-note');
   const isOpen  = noteDiv.classList.toggle('open');
   if (isOpen) card.querySelector('.note-input').focus();
 }
 
-function onNoteInput(el, url) {
+function onNoteInput(el) {
+  const url  = el.closest('.paper-card').dataset.url;
   const text = el.value;
   if (text.trim()) state.notes[url] = text;
   else delete state.notes[url];
@@ -850,8 +851,9 @@ function setSortBy(s, btn) {
 }
 
 // ── Read / Bookmark ───────────────────────────────────────────────────────────
-function toggleRead(btn, url) {
+function toggleRead(btn) {
   const card = btn.closest('.paper-card');
+  const url  = card.dataset.url;
   if (state.readUrls.has(url)) {
     state.readUrls.delete(url); btn.classList.remove('on'); card.classList.remove('is-read');
     btn.title = 'Mark read';
@@ -862,7 +864,8 @@ function toggleRead(btn, url) {
   lsSet(LS.read, [...state.readUrls]);
 }
 
-function toggleBookmark(btn, url) {
+function toggleBookmark(btn) {
+  const url = btn.closest('.paper-card').dataset.url;
   if (state.bookmarkUrls.has(url)) {
     state.bookmarkUrls.delete(url); btn.classList.remove('on'); btn.title = 'Bookmark';
   } else {

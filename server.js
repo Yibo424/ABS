@@ -353,10 +353,22 @@ function isNonArticle(title) {
 }
 
 // Extract plain-text abstract from RSS item description/content fields
+// Some RSS feeds put pure bibliographic metadata (no actual abstract) in the
+// description field -- Elsevier's "Publication date: October 2026 Source: ...
+// Author(s): ..." and Chicago Journals' "Journal of X, Volume N, Issue M,
+// Page P-P, Month Year." Showing that as if it were the abstract is misleading,
+// so treat it as no abstract instead.
+function isCitationOnlyText(text) {
+  return /^Publication date:/i.test(text)
+    || /^[^,]+,\s*Ahead of Print\.?$/i.test(text)
+    || /^[^,]+,\s*Volume\s+\d+(,\s*Issue\s+\d+)?\s*,\s*Page\s+[^,]+,\s*[A-Za-z]+\s+\d{4}\.?$/i.test(text);
+}
+
 function extractAbstract(item) {
   // Prefer full-content fields; avoid contentSnippet which rss-parser truncates to ~200 chars
   const raw = item['content:encoded'] || item.content || item.summary || item.description || item.contentSnippet || '';
-  return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 3000) || null;
+  const cleaned = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 3000);
+  return (cleaned && !isCitationOnlyText(cleaned)) ? cleaned : null;
 }
 
 // Strip JATS XML tags from CrossRef abstracts

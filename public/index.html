@@ -82,6 +82,8 @@
   .filter-btn .err-badge { background: #ef4444; color: #fff; border-radius: 3px; font-size: .63rem; padding: 0 3px; }
 
   .filter-sep { width: 1px; background: var(--border); height: 20px; margin: 0 2px; }
+  .pill-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .pill-group-label { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
 
   .btn-hf-toggle {
     background: var(--hf-light); border: 1px solid #fcd34d; border-radius: 20px;
@@ -296,26 +298,7 @@
     <!-- Published journals -->
     <div id="journalPills" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
       <button class="filter-btn active" data-journal="all"          onclick="setJournalFilter('all',this)">All</button>
-      <button class="filter-btn" data-journal="AER"                 onclick="setJournalFilter('AER',this)">AER</button>
-      <button class="filter-btn" data-journal="Econometrica"        onclick="setJournalFilter('Econometrica',this)">Econometrica</button>
-      <button class="filter-btn" data-journal="QJE"                 onclick="setJournalFilter('QJE',this)">QJE</button>
-      <button class="filter-btn" data-journal="REStud"              onclick="setJournalFilter('REStud',this)">REStud</button>
-      <button class="filter-btn" data-journal="JPE"                 onclick="setJournalFilter('JPE',this)">JPE</button>
-      <button class="filter-btn" data-journal="JF"                  onclick="setJournalFilter('JF',this)">JF</button>
-      <button class="filter-btn" data-journal="JFE"                 onclick="setJournalFilter('JFE',this)">JFE</button>
-      <button class="filter-btn" data-journal="RFS"                 onclick="setJournalFilter('RFS',this)">RFS</button>
-      <button class="filter-btn" data-journal="Econ Journal"        onclick="setJournalFilter('Econ Journal',this)">Econ Journal</button>
-      <button class="filter-btn" data-journal="AEJ:Applied"         onclick="setJournalFilter('AEJ:Applied',this)">AEJ:Applied</button>
-      <button class="filter-btn" data-journal="JFQA"                onclick="setJournalFilter('JFQA',this)">JFQA</button>
-      <button class="filter-btn" data-journal="ReStat"              onclick="setJournalFilter('ReStat',this)">ReStat</button>
-      <button class="filter-btn" data-journal="JEL"                onclick="setJournalFilter('JEL',this)">JEL</button>
-      <button class="filter-btn" data-journal="JEP"                onclick="setJournalFilter('JEP',this)">JEP</button>
-      <button class="filter-btn" data-journal="AEJ:Macro"          onclick="setJournalFilter('AEJ:Macro',this)">AEJ:Macro</button>
-      <button class="filter-btn" data-journal="JME"                onclick="setJournalFilter('JME',this)">JME</button>
-      <button class="filter-btn" data-journal="JLE"                onclick="setJournalFilter('JLE',this)">JLE</button>
-      <button class="filter-btn" data-journal="JEEA"               onclick="setJournalFilter('JEEA',this)">JEEA</button>
-      <button class="filter-btn" data-journal="RoF"                onclick="setJournalFilter('RoF',this)">RoF</button>
-      <button class="filter-btn" data-journal="JMCB"               onclick="setJournalFilter('JMCB',this)">JMCB</button>
+      <div id="journalGroups" style="display:contents;"></div>
       <div class="filter-sep"></div>
       <button class="btn-hf-toggle" id="btnHFToggle" onclick="toggleHF()">🏠 HF Only</button>
     </div>
@@ -413,21 +396,7 @@
       <span class="chevron">▼</span>
     </button>
     <div class="info-body" id="infoBody">
-      <div class="info-grid">
-        <div class="info-item"><div class="name">AER</div><div class="desc">Monthly issues — American Economic Association</div></div>
-        <div class="info-item"><div class="name">Econometrica</div><div class="desc">Bimonthly; Early View available ahead of issue</div></div>
-        <div class="info-item"><div class="name">QJE</div><div class="desc">Quarterly; Advance Articles ~1 week after acceptance</div></div>
-        <div class="info-item"><div class="name">REStud</div><div class="desc">Quarterly; Advance Articles ~1 week after acceptance</div></div>
-        <div class="info-item"><div class="name">JPE</div><div class="desc">Monthly; Online First available ahead of print</div></div>
-        <div class="info-item"><div class="name">Economic Journal</div><div class="desc">ABS 4; Advance Articles via Oxford Academic</div></div>
-        <div class="info-item"><div class="name">JF</div><div class="desc">Bimonthly; Early View via Wiley</div></div>
-        <div class="info-item"><div class="name">JFE</div><div class="desc">Monthly; Articles in Press via Elsevier</div></div>
-        <div class="info-item"><div class="name">RFS</div><div class="desc">Monthly; Advance Articles via Oxford Academic</div></div>
-        <div class="info-item"><div class="name">AEJ: Applied Economics</div><div class="desc">ABS 4; Quarterly — American Economic Association</div></div>
-        <div class="info-item"><div class="name">JFQA</div><div class="desc">ABS 4; Bimonthly — Cambridge University Press</div></div>
-        <div class="info-item"><div class="name">ReStat</div><div class="desc">ABS 4; Quarterly — MIT Press</div></div>
-        <div class="info-item"><div class="name">NBER</div><div class="desc">New working papers every Monday</div></div>
-        <div class="info-item"><div class="name">arXiv Economics</div><div class="desc">Daily updates across econ sub-categories</div></div>
+      <div class="info-grid" id="infoGrid">
       </div>
     </div>
   </div>
@@ -462,6 +431,8 @@ const state = {
   publishedErrors: {},
   workingErrors: {},
   lastUpdatedPublished: null,
+  publishedLoaded: false,
+  workingLoaded:   false,
 
   currentTab:     prefs.currentTab     || 'published',
   journalFilter:  prefs.journalFilter  || 'all',
@@ -663,6 +634,12 @@ function getThisWeekPapers() {
 
 function renderCurrentTab() {
   const tab = state.currentTab;
+  // Until this tab's data has arrived, keep the Loading spinner rather than
+  // rendering an empty list that reads as "No papers match".
+  const ready = tab === 'published' ? state.publishedLoaded
+              : tab === 'thisweek'  ? state.publishedLoaded && state.workingLoaded
+              : state.workingLoaded;
+  if (!ready) return;
   let raw, containerId, label;
   if (tab === 'published')  { raw = state.publishedPapers; containerId = 'content-published'; }
   else if (tab === 'nber')  { raw = state.nberPapers;      containerId = 'content-nber'; }
@@ -680,13 +657,8 @@ function renderCurrentTab() {
 
   // Journal error badges
   if (tab === 'published') {
-    const keyMap = { AER:'aer', Econometrica:'econometrica', QJE:'qje', REStud:'restud',
-                     JPE:'jpe', 'Econ Journal':'econj', JF:'jf', JFE:'jfe', RFS:'rfs',
-                     'AEJ:Applied':'aejapp', JFQA:'jfqa', ReStat:'restat',
-                     JEL:'jel', JEP:'jep', 'AEJ:Macro':'aejmacro',
-                     JME:'jme', JLE:'jle', JEEA:'jeea', RoF:'rof', JMCB:'jmcb' };
-    document.querySelectorAll('#journalPills .filter-btn[data-journal]').forEach(btn => {
-      const key = keyMap[btn.dataset.journal]; if (!key) return;
+    document.querySelectorAll('#journalPills .filter-btn[data-key]').forEach(btn => {
+      const key = btn.dataset.key;
       const existing = btn.querySelector('.err-badge');
       if (state.publishedErrors[key]) {
         if (!existing) { const b = document.createElement('span'); b.className='err-badge'; b.title=state.publishedErrors[key]; b.textContent='⚠️'; btn.appendChild(b); }
@@ -931,6 +903,45 @@ function buildArxivPills() {
   });
 }
 
+// ── Journal pills & Update Schedule (from /api/journals) ─────────────────────
+const JOURNAL_GROUPS = [['economics', 'Economics'], ['finance', 'Finance']];
+const ABS_RANK = { '4*': 0, '4': 1 };
+
+async function loadJournals() {
+  try {
+    const res = await fetch('/api/journals');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { journals, workingPaperSources } = await res.json();
+    buildJournalPills(journals);
+    buildInfoPanel([...journals, ...workingPaperSources]);
+    renderCurrentTab(); // papers may have arrived first; re-apply error badges
+  } catch (err) {
+    console.warn('Failed to load journal list:', err.message);
+  }
+}
+
+function buildJournalPills(journals) {
+  // A saved filter may point at a journal that has since been dropped/renamed
+  if (state.journalFilter !== 'all' && !journals.some(j => j.journal === state.journalFilter)) {
+    state.journalFilter = 'all'; savePrefs();
+  }
+  document.querySelector('#journalPills [data-journal="all"]').classList.toggle('active', state.journalFilter === 'all');
+
+  const pill = j => `<button class="filter-btn${state.journalFilter === j.journal ? ' active' : ''}" data-journal="${escHtml(j.journal)}" data-key="${escHtml(j.key)}" title="${escHtml(j.journalFull)} · ABS ${escHtml(j.abs)}" onclick="setJournalFilter(this.dataset.journal,this)">${escHtml(j.journal)}</button>`;
+  document.getElementById('journalGroups').innerHTML = JOURNAL_GROUPS.map(([cat, label]) => {
+    const list = journals.filter(j => j.category === cat)
+      .sort((a, b) => (ABS_RANK[a.abs] ?? 9) - (ABS_RANK[b.abs] ?? 9) || a.journal.localeCompare(b.journal));
+    if (!list.length) return '';
+    return `<div class="filter-sep"></div><div class="pill-group"><span class="pill-group-label">${label}</span>${list.map(pill).join('')}</div>`;
+  }).join('');
+}
+
+function buildInfoPanel(sources) {
+  document.getElementById('infoGrid').innerHTML = sources.map(s =>
+    `<div class="info-item"><div class="name">${escHtml(s.journalFull)}</div><div class="desc">${s.abs ? `ABS ${escHtml(s.abs)}; ` : ''}${escHtml(s.schedule || '')}</div></div>`
+  ).join('');
+}
+
 // ── Error banners ─────────────────────────────────────────────────────────────
 function showErrorBanner(panelId, errors) {
   const banner = document.getElementById(`errorBanner-${panelId}`);
@@ -959,15 +970,6 @@ function restoreUIState() {
   document.querySelectorAll('[data-date]').forEach(b => b.classList.toggle('active', b.dataset.date === state.dateFilter));
   document.querySelectorAll('[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === state.sortBy));
 
-  // A saved filter may point at a journal that has since been dropped
-  if (!document.querySelector(`#journalPills .filter-btn[data-journal="${CSS.escape(state.journalFilter)}"]`)) {
-    state.journalFilter = 'all'; savePrefs();
-  }
-  if (state.journalFilter !== 'all') {
-    document.querySelectorAll('#journalPills .filter-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.journal === state.journalFilter);
-    });
-  }
 
   if (state.keywords)        document.getElementById('kwInput').value             = state.keywords;
   if (state.watchedAuthors)  document.getElementById('watchedAuthorsInput').value = state.watchedAuthors;
@@ -1038,6 +1040,7 @@ async function loadPublished() {
     const data = await res.json();
     state.publishedPapers = data.papers || [];
     state.publishedErrors = data.errors || {};
+    state.publishedLoaded = true;
     state.lastUpdatedPublished = data.lastUpdated;
     updateLastUpdated(data.lastUpdated);
     showErrorBanner('published', state.publishedErrors);
@@ -1058,6 +1061,7 @@ async function loadWorkingPapers() {
     state.nberPapers  = all.filter(p => p.category === 'nber');
     state.arxivPapers = all.filter(p => p.category === 'arxiv');
     state.workingErrors = data.errors || {};
+    state.workingLoaded = true;
 
     if (!state.lastUpdatedPublished) updateLastUpdated(data.lastUpdated);
 
@@ -1105,7 +1109,7 @@ function toggleInfo() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
   restoreUIState();
-  await Promise.all([loadPublished(), loadWorkingPapers()]);
+  await Promise.all([loadJournals(), loadPublished(), loadWorkingPapers()]);
 
   // The server refreshes its own cache hourly (see server.js), so a plain
   // re-fetch here just picks up whatever the server last cached — cheap, and

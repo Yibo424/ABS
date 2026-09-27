@@ -81,15 +81,7 @@ const RSS_SOURCES = [
     category: 'economics',
     type: 'issue',
     rss: 'https://onlinelibrary.wiley.com/feed/14680262/most-recent',
-  },
-  {
-    key: 'qje',
-    journal: 'QJE',
-    journalFull: 'Quarterly Journal of Economics',
-    abs: '4*',
-    category: 'economics',
-    type: 'advance',
-    rss: 'https://academic.oup.com/rss/site_5504/advanceAccess_3365.xml',
+    schedule: 'Bimonthly; Early View available ahead of issue',
   },
   {
     key: 'jpe',
@@ -99,6 +91,7 @@ const RSS_SOURCES = [
     category: 'economics',
     type: 'issue',
     rss: 'https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe',
+    schedule: 'Monthly; Online First available ahead of print',
   },
   {
     key: 'jf',
@@ -108,6 +101,7 @@ const RSS_SOURCES = [
     category: 'finance',
     type: 'issue',
     rss: 'https://onlinelibrary.wiley.com/feed/15406261/most-recent',
+    schedule: 'Bimonthly; Early View via Wiley',
   },
   {
     key: 'jfe',
@@ -117,6 +111,7 @@ const RSS_SOURCES = [
     category: 'finance',
     type: 'issue',
     rss: 'https://rss.sciencedirect.com/publication/science/0304405X',
+    schedule: 'Monthly; Articles in Press via Elsevier',
   },
 ];
 
@@ -135,6 +130,19 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0002-8282',
+    schedule: 'Monthly issues — American Economic Association',
+  },
+  {
+    // QJE's Oxford Academic RSS only lists the handful of Advance Access
+    // papers; CrossRef returns the full recent run with abstracts.
+    key: 'qje',
+    journal: 'QJE',
+    journalFull: 'Quarterly Journal of Economics',
+    abs: '4*',
+    category: 'economics',
+    type: 'advance',
+    issn: '0033-5533',
+    schedule: 'Quarterly; Advance Articles ~1 week after acceptance',
   },
   {
     key: 'restud',
@@ -144,6 +152,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'advance',
     issn: '0034-6527',
+    schedule: 'Quarterly; Advance Articles ~1 week after acceptance',
   },
   {
     key: 'rfs',
@@ -153,6 +162,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'finance',
     type: 'advance',
     issn: '0893-9454',
+    schedule: 'Monthly; Advance Articles via Oxford Academic',
   },
   {
     key: 'econj',
@@ -162,6 +172,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'advance',
     issn: '0013-0133',
+    schedule: 'Advance Articles via Oxford Academic',
   },
   {
     key: 'aejapp',
@@ -171,6 +182,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '1945-7782',
+    schedule: 'Quarterly — American Economic Association',
   },
   {
     key: 'restat',
@@ -180,6 +192,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0034-6535',
+    schedule: 'Quarterly — MIT Press',
   },
   {
     key: 'jfqa',
@@ -189,6 +202,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'finance',
     type: 'issue',
     issn: '0022-1090',
+    schedule: 'Bimonthly — Cambridge University Press',
   },
   {
     key: 'jel',
@@ -198,6 +212,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0022-0515',
+    schedule: 'Quarterly — American Economic Association',
   },
   {
     key: 'jep',
@@ -207,6 +222,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0895-3309',
+    schedule: 'Quarterly — American Economic Association',
   },
   {
     key: 'aejmacro',
@@ -216,6 +232,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '1945-7707',
+    schedule: 'Quarterly — American Economic Association',
   },
   {
     key: 'jme',
@@ -225,6 +242,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0304-3932',
+    schedule: 'Articles in Press via Elsevier',
   },
   {
     key: 'jle',
@@ -234,6 +252,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0734-306X',
+    schedule: 'Quarterly — University of Chicago Press',
   },
   {
     key: 'jeea',
@@ -243,24 +262,27 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '1542-4766',
+    schedule: 'Bimonthly — Oxford University Press',
   },
   {
     key: 'rof',
-    journal: 'RoF',
+    journal: 'RF',
     journalFull: 'Review of Finance',
     abs: '4',
     category: 'finance',
     type: 'issue',
     issn: '1572-3097',
+    schedule: 'Bimonthly — Oxford University Press',
   },
   {
     key: 'jmcb',
     journal: 'JMCB',
     journalFull: 'Journal of Money, Credit and Banking',
     abs: '4',
-    category: 'economics',
+    category: 'finance',
     type: 'issue',
     issn: '0022-2879',
+    schedule: 'Published by Wiley',
   },
 ];
 
@@ -273,6 +295,7 @@ const NBER_CROSSREF = {
   category: 'nber',
   type: 'working-paper',
   prefix: '10.3386',
+  schedule: 'New working papers every Monday',
 };
 
 const ARXIV_SOURCE = {
@@ -282,6 +305,7 @@ const ARXIV_SOURCE = {
   abs: null,
   category: 'arxiv',
   type: 'working-paper',
+  schedule: 'Daily updates across econ sub-categories',
 };
 
 const ARXIV_ROWS = 200;
@@ -653,10 +677,44 @@ async function fetchAllWorkingPapers() {
 
 // Each endpoint only reports errors relevant to its own sources,
 // so a NBER fetch failure never leaks into the published-papers error list.
-const PUBLISHED_KEYS = new Set(
-  ['aer', 'econometrica', 'qje', 'restud', 'jpe', 'econj', 'jf', 'jfe', 'rfs', 'aejapp', 'jfqa', 'restat', 'jel', 'jep', 'aejmacro']
-);
-const WORKING_KEYS = new Set(['nber', 'arxiv']);
+const PUBLISHED_SOURCES = [...RSS_SOURCES, ...CROSSREF_JOURNAL_SOURCES];
+const PUBLISHED_KEYS = new Set(PUBLISHED_SOURCES.map(s => s.key));
+const WORKING_KEYS = new Set([NBER_CROSSREF.key, ARXIV_SOURCE.key]);
+
+// Single source of truth for the frontend's journal pills and Update Schedule
+// panel, so adding/removing a journal only means editing the lists above.
+app.get('/api/journals', (req, res) => {
+  const pick = s => ({
+    key: s.key, journal: s.journal, journalFull: s.journalFull,
+    abs: s.abs, category: s.category, schedule: s.schedule,
+  });
+  res.json({
+    journals: PUBLISHED_SOURCES.map(pick),
+    workingPaperSources: [NBER_CROSSREF, ARXIV_SOURCE].map(pick),
+  });
+});
+
+// Concurrent callers (startup warm-up, first page load, hourly timer) share one
+// in-flight upstream fetch instead of each starting their own.
+const inflight = { papers: null, workingPapers: null };
+
+function loadPapers() {
+  if (!inflight.papers) {
+    inflight.papers = fetchAllPapers()
+      .then(papers => { cache.papers = papers; cache.papersTimestamp = Date.now(); return papers; })
+      .finally(() => { inflight.papers = null; });
+  }
+  return inflight.papers;
+}
+
+function loadWorkingPapers() {
+  if (!inflight.workingPapers) {
+    inflight.workingPapers = fetchAllWorkingPapers()
+      .then(papers => { cache.workingPapers = papers; cache.workingPapersTimestamp = Date.now(); return papers; })
+      .finally(() => { inflight.workingPapers = null; });
+  }
+  return inflight.workingPapers;
+}
 
 function pickErrors(keys) {
   return Object.fromEntries(
@@ -666,10 +724,7 @@ function pickErrors(keys) {
 
 app.get('/api/papers', async (req, res) => {
   try {
-    if (!isCacheValid(cache.papersTimestamp)) {
-      cache.papers = await fetchAllPapers();
-      cache.papersTimestamp = Date.now();
-    }
+    if (!isCacheValid(cache.papersTimestamp)) await loadPapers();
     res.json({
       papers: cache.papers,
       lastUpdated: new Date(cache.papersTimestamp).toISOString(),
@@ -683,10 +738,7 @@ app.get('/api/papers', async (req, res) => {
 
 app.get('/api/working-papers', async (req, res) => {
   try {
-    if (!isCacheValid(cache.workingPapersTimestamp)) {
-      cache.workingPapers = await fetchAllWorkingPapers();
-      cache.workingPapersTimestamp = Date.now();
-    }
+    if (!isCacheValid(cache.workingPapersTimestamp)) await loadWorkingPapers();
     res.json({
       papers: cache.workingPapers,
       lastUpdated: new Date(cache.workingPapersTimestamp).toISOString(),
@@ -702,13 +754,9 @@ app.get('/api/working-papers', async (req, res) => {
 // manual "Refresh" button — never by per-client polling (see REFRESH_COOLDOWN_MS).
 async function refreshCache() {
   const [papers, workingPapers] = await Promise.all([
-    fetchAllPapers(),
-    fetchAllWorkingPapers(),
+    loadPapers(),
+    loadWorkingPapers(),
   ]);
-  cache.papers = papers;
-  cache.papersTimestamp = Date.now();
-  cache.workingPapers = workingPapers;
-  cache.workingPapersTimestamp = Date.now();
   return { papers, workingPapers };
 }
 
@@ -769,3 +817,19 @@ app.listen(PORT, '0.0.0.0', () => {
 setInterval(() => {
   refreshCache().catch(err => console.error('Scheduled refresh failed:', err.message));
 }, CACHE_TTL);
+
+// Warm the cache at startup so the first visitor after a deploy/restart
+// doesn't wait for ~20 upstream fetches.
+refreshCache().catch(err => console.error('Startup refresh failed:', err.message));
+
+// Render's free tier spins a service down after 15 min without inbound
+// traffic; the next visitor then waits for a cold boot plus a full re-fetch.
+// Pinging our own public URL keeps it awake. RENDER_EXTERNAL_URL is set by
+// Render automatically, so this is a no-op when running locally.
+app.get('/healthz', (req, res) => res.send('ok'));
+if (process.env.RENDER_EXTERNAL_URL) {
+  setInterval(() => {
+    axios.get(`${process.env.RENDER_EXTERNAL_URL}/healthz`, { timeout: 10000 })
+      .catch(err => console.warn('Keep-alive ping failed:', err.message));
+  }, 10 * 60 * 1000);
+}

@@ -118,15 +118,6 @@ const RSS_SOURCES = [
     type: 'issue',
     rss: 'https://rss.sciencedirect.com/publication/science/0304405X',
   },
-  {
-    key: 'jpubec',
-    journal: 'JPubEc',
-    journalFull: 'Journal of Public Economics',
-    abs: '4',
-    category: 'economics',
-    type: 'issue',
-    rss: 'https://rss.sciencedirect.com/publication/science/00472727',
-  },
 ];
 
 // CrossRef sources: journals whose RSS feeds are dead or JS-blocked
@@ -203,7 +194,7 @@ const CROSSREF_JOURNAL_SOURCES = [
     key: 'jel',
     journal: 'JEL',
     journalFull: 'Journal of Economic Literature',
-    abs: '4*',
+    abs: '4',
     category: 'economics',
     type: 'issue',
     issn: '0022-0515',
@@ -218,15 +209,6 @@ const CROSSREF_JOURNAL_SOURCES = [
     issn: '0895-3309',
   },
   {
-    key: 'aejpol',
-    journal: 'AEJ:Policy',
-    journalFull: 'American Economic Journal: Economic Policy',
-    abs: '4',
-    category: 'economics',
-    type: 'issue',
-    issn: '1945-774X',
-  },
-  {
     key: 'aejmacro',
     journal: 'AEJ:Macro',
     journalFull: 'American Economic Journal: Macroeconomics',
@@ -234,15 +216,6 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '1945-7707',
-  },
-  {
-    key: 'aejmicro',
-    journal: 'AEJ:Micro',
-    journalFull: 'American Economic Journal: Microeconomics',
-    abs: '4',
-    category: 'economics',
-    type: 'issue',
-    issn: '1945-7669',
   },
   {
     key: 'jme',
@@ -261,15 +234,6 @@ const CROSSREF_JOURNAL_SOURCES = [
     category: 'economics',
     type: 'issue',
     issn: '0734-306X',
-  },
-  {
-    key: 'jde',
-    journal: 'JDE',
-    journalFull: 'Journal of Development Economics',
-    abs: '4',
-    category: 'economics',
-    type: 'issue',
-    issn: '0304-3878',
   },
   {
     key: 'jeea',
@@ -359,10 +323,10 @@ const MONTH_NAMES = {
   july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
 };
 
-// Elsevier's ScienceDirect RSS feeds (JFE, JPubEc) carry no <pubDate>/<dc:date>
+// Elsevier's ScienceDirect RSS feeds (JFE) carry no <pubDate>/<dc:date>
 // at all -- the issue date only shows up as plain text in the description,
-// e.g. "Publication date: October 2026". Without this every item from those
-// two feeds gets date: null, which silently drops them from date filters,
+// e.g. "Publication date: October 2026". Without this every item from that
+// feed gets date: null, which silently drops them from date filters,
 // sorting, and the This Week tab. Built as an explicit Y-M-01 string (not a
 // Date round-trip) to avoid local-timezone rollover on "Month Year" parsing.
 function extractElsevierDate(text) {
@@ -690,7 +654,7 @@ async function fetchAllWorkingPapers() {
 // Each endpoint only reports errors relevant to its own sources,
 // so a NBER fetch failure never leaks into the published-papers error list.
 const PUBLISHED_KEYS = new Set(
-  ['aer', 'econometrica', 'qje', 'restud', 'jpe', 'econj', 'jf', 'jfe', 'rfs', 'jpubec', 'aejapp', 'jfqa', 'restat', 'jel', 'jep', 'aejpol', 'aejmacro', 'aejmicro']
+  ['aer', 'econometrica', 'qje', 'restud', 'jpe', 'econj', 'jf', 'jfe', 'rfs', 'aejapp', 'jfqa', 'restat', 'jel', 'jep', 'aejmacro']
 );
 const WORKING_KEYS = new Set(['nber', 'arxiv']);
 

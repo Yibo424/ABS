@@ -294,7 +294,7 @@
   <!-- Row 1: context-sensitive pills (journal / arXiv category) -->
   <div class="filter-row" id="filterRow1">
     <!-- Published journals -->
-    <div id="journalPills" style="display:flex;flex-wrap:nowrap;gap:6px;align-items:center;flex-shrink:0;">
+    <div id="journalPills" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
       <button class="filter-btn active" data-journal="all"          onclick="setJournalFilter('all',this)">All</button>
       <button class="filter-btn" data-journal="AER"                 onclick="setJournalFilter('AER',this)">AER</button>
       <button class="filter-btn" data-journal="Econometrica"        onclick="setJournalFilter('Econometrica',this)">Econometrica</button>
@@ -306,9 +306,16 @@
       <button class="filter-btn" data-journal="RFS"                 onclick="setJournalFilter('RFS',this)">RFS</button>
       <button class="filter-btn" data-journal="Econ Journal"        onclick="setJournalFilter('Econ Journal',this)">Econ Journal</button>
       <button class="filter-btn" data-journal="AEJ:Applied"         onclick="setJournalFilter('AEJ:Applied',this)">AEJ:Applied</button>
-      <button class="filter-btn" data-journal="JPubEc"              onclick="setJournalFilter('JPubEc',this)">JPubEc</button>
       <button class="filter-btn" data-journal="JFQA"                onclick="setJournalFilter('JFQA',this)">JFQA</button>
       <button class="filter-btn" data-journal="ReStat"              onclick="setJournalFilter('ReStat',this)">ReStat</button>
+      <button class="filter-btn" data-journal="JEL"                onclick="setJournalFilter('JEL',this)">JEL</button>
+      <button class="filter-btn" data-journal="JEP"                onclick="setJournalFilter('JEP',this)">JEP</button>
+      <button class="filter-btn" data-journal="AEJ:Macro"          onclick="setJournalFilter('AEJ:Macro',this)">AEJ:Macro</button>
+      <button class="filter-btn" data-journal="JME"                onclick="setJournalFilter('JME',this)">JME</button>
+      <button class="filter-btn" data-journal="JLE"                onclick="setJournalFilter('JLE',this)">JLE</button>
+      <button class="filter-btn" data-journal="JEEA"               onclick="setJournalFilter('JEEA',this)">JEEA</button>
+      <button class="filter-btn" data-journal="RoF"                onclick="setJournalFilter('RoF',this)">RoF</button>
+      <button class="filter-btn" data-journal="JMCB"               onclick="setJournalFilter('JMCB',this)">JMCB</button>
       <div class="filter-sep"></div>
       <button class="btn-hf-toggle" id="btnHFToggle" onclick="toggleHF()">🏠 HF Only</button>
     </div>
@@ -417,7 +424,6 @@
         <div class="info-item"><div class="name">JFE</div><div class="desc">Monthly; Articles in Press via Elsevier</div></div>
         <div class="info-item"><div class="name">RFS</div><div class="desc">Monthly; Advance Articles via Oxford Academic</div></div>
         <div class="info-item"><div class="name">AEJ: Applied Economics</div><div class="desc">ABS 4; Quarterly — American Economic Association</div></div>
-        <div class="info-item"><div class="name">Journal of Public Economics</div><div class="desc">ABS 4; Monthly; Articles in Press via Elsevier</div></div>
         <div class="info-item"><div class="name">JFQA</div><div class="desc">ABS 4; Bimonthly — Cambridge University Press</div></div>
         <div class="info-item"><div class="name">ReStat</div><div class="desc">ABS 4; Quarterly — MIT Press</div></div>
         <div class="info-item"><div class="name">NBER</div><div class="desc">New working papers every Monday</div></div>
@@ -676,7 +682,9 @@ function renderCurrentTab() {
   if (tab === 'published') {
     const keyMap = { AER:'aer', Econometrica:'econometrica', QJE:'qje', REStud:'restud',
                      JPE:'jpe', 'Econ Journal':'econj', JF:'jf', JFE:'jfe', RFS:'rfs',
-                     'AEJ:Applied':'aejapp', JPubEc:'jpubec', JFQA:'jfqa', ReStat:'restat' };
+                     'AEJ:Applied':'aejapp', JFQA:'jfqa', ReStat:'restat',
+                     JEL:'jel', JEP:'jep', 'AEJ:Macro':'aejmacro',
+                     JME:'jme', JLE:'jle', JEEA:'jeea', RoF:'rof', JMCB:'jmcb' };
     document.querySelectorAll('#journalPills .filter-btn[data-journal]').forEach(btn => {
       const key = keyMap[btn.dataset.journal]; if (!key) return;
       const existing = btn.querySelector('.err-badge');
@@ -951,6 +959,10 @@ function restoreUIState() {
   document.querySelectorAll('[data-date]').forEach(b => b.classList.toggle('active', b.dataset.date === state.dateFilter));
   document.querySelectorAll('[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === state.sortBy));
 
+  // A saved filter may point at a journal that has since been dropped
+  if (!document.querySelector(`#journalPills .filter-btn[data-journal="${CSS.escape(state.journalFilter)}"]`)) {
+    state.journalFilter = 'all'; savePrefs();
+  }
   if (state.journalFilter !== 'all') {
     document.querySelectorAll('#journalPills .filter-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.journal === state.journalFilter);

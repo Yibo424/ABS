@@ -255,6 +255,17 @@ const CROSSREF_JOURNAL_SOURCES = [
     schedule: 'Quarterly — University of Chicago Press',
   },
   {
+    // ABS 3 -- kept by request despite the site's otherwise 4*/4-only list
+    key: 'jde',
+    journal: 'JDE',
+    journalFull: 'Journal of Development Economics',
+    abs: '3',
+    category: 'economics',
+    type: 'issue',
+    issn: '0304-3878',
+    schedule: 'Monthly; Articles in Press via Elsevier',
+  },
+  {
     key: 'jeea',
     journal: 'JEEA',
     journalFull: 'Journal of the European Economic Association',
